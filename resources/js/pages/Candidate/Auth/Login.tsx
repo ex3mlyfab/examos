@@ -19,42 +19,53 @@ export default function Login() {
     return (
         <div className="flex min-h-screen bg-background font-sans selection:bg-primary/20">
             <Head title="Candidate Portal - Login" />
-            
+
             {/* Left Side: Branding / Visuals (Hidden on small screens) */}
-            <div className="hidden lg:flex lg:w-1/2 relative bg-primary flex-col justify-between overflow-hidden p-12 text-primary-foreground">
+            <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-12 text-primary-foreground lg:flex lg:w-1/2">
                 <div className="absolute inset-0 z-0">
-                    <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-gradient-to-br from-primary via-blue-600 to-indigo-900 opacity-90 mix-blend-multiply"></div>
-                    <div className="absolute top-20 left-20 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl opacity-20 animate-blob"></div>
-                    <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-300 rounded-full mix-blend-overlay filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+                    <div className="absolute top-[-10%] left-[-10%] h-[120%] w-[120%] bg-gradient-to-br from-primary via-blue-600 to-indigo-900 opacity-90 mix-blend-multiply"></div>
+                    <div className="animate-blob absolute top-20 left-20 h-96 w-96 rounded-full bg-white opacity-20 mix-blend-overlay blur-3xl filter"></div>
+                    <div className="animate-blob animation-delay-2000 absolute right-20 bottom-20 h-96 w-96 rounded-full bg-cyan-300 opacity-20 mix-blend-overlay blur-3xl filter"></div>
                 </div>
 
                 <div className="relative z-10 flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-primary shadow-lg">
                         <BookOpen className="h-7 w-7" />
                     </div>
-                    <span className="text-3xl font-extrabold tracking-tight">ExamOS</span>
+                    <span className="text-3xl font-extrabold tracking-tight">
+                        ExamOS
+                    </span>
                 </div>
 
-                <div className="relative z-10 mb-20 animate-fade-in">
-                    <h1 className="text-5xl font-bold leading-tight mb-6">
-                        Secure.<br />Seamless.<br />Reliable.
+                <div className="animate-fade-in relative z-10 mb-20">
+                    <h1 className="mb-6 text-5xl leading-tight font-bold">
+                        Secure.
+                        <br />
+                        Seamless.
+                        <br />
+                        Reliable.
                     </h1>
-                    <p className="text-xl text-primary-foreground/80 max-w-md leading-relaxed">
-                        Welcome to your unified assessment portal. Log in to access your designated examination sessions.
+                    <p className="max-w-md text-xl leading-relaxed text-primary-foreground/80">
+                        Welcome to your unified assessment portal. Log in to
+                        access your designated examination sessions.
                     </p>
                 </div>
-                
-                <div className="relative z-10 flex items-center gap-2 text-primary-foreground/60 text-sm">
+
+                <div className="relative z-10 flex items-center gap-2 text-sm text-primary-foreground/60">
                     <ShieldCheck className="h-5 w-5" />
                     <span>Protected by Enterprise-Grade Security</span>
                 </div>
             </div>
 
             {/* Right Side: Login Form */}
-            <div className="flex w-full lg:w-1/2 flex-col items-center justify-center p-8 sm:p-12 xl:p-24 relative">
+            <div className="relative flex w-full flex-col items-center justify-center p-8 sm:p-12 lg:w-1/2 xl:p-24">
                 {/* Back Link */}
                 <div className="absolute top-8 left-8">
-                    <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground group">
+                    <Button
+                        variant="ghost"
+                        asChild
+                        className="group text-muted-foreground hover:text-foreground"
+                    >
                         <Link href="/">
                             <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
                             Back to Home
@@ -62,51 +73,79 @@ export default function Login() {
                     </Button>
                 </div>
 
-                <div className="w-full max-w-md animate-fade-in">
-                    <div className="lg:hidden flex items-center justify-center gap-2 mb-10 text-primary">
+                <div className="animate-fade-in w-full max-w-md">
+                    <div className="mb-10 flex items-center justify-center gap-2 text-primary lg:hidden">
                         <BookOpen className="h-8 w-8" />
-                        <span className="text-2xl font-bold tracking-tight">ExamOS</span>
+                        <span className="text-2xl font-bold tracking-tight">
+                            ExamOS
+                        </span>
                     </div>
 
                     <div className="mb-10 text-center lg:text-left">
-                        <h2 className="text-3xl font-bold tracking-tight mb-2">Candidate Portal</h2>
-                        <p className="text-muted-foreground">Sign in to begin your examination.</p>
+                        <h2 className="mb-2 text-3xl font-bold tracking-tight">
+                            Candidate Portal
+                        </h2>
+                        <p className="text-muted-foreground">
+                            Sign in to begin your examination.
+                        </p>
                     </div>
 
                     <form onSubmit={submit} className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="file_no">File Number / Username</Label>
+                            <Label htmlFor="file_no">
+                                File Number / Username
+                            </Label>
                             <Input
                                 id="file_no"
                                 type="text"
                                 placeholder="e.g. COMP/2026/001"
                                 value={data.file_no}
-                                className="h-12 bg-background focus:bg-background transition-colors text-base"
-                                onChange={(e) => setData('file_no', e.target.value)}
+                                className="h-12 bg-background text-base transition-colors focus:bg-background"
+                                onChange={(e) =>
+                                    setData('file_no', e.target.value)
+                                }
                                 autoFocus
                             />
-                            {errors.file_no && <p className="text-sm font-medium text-destructive mt-1">{errors.file_no}</p>}
+                            {errors.file_no && (
+                                <p className="mt-1 text-sm font-medium text-destructive">
+                                    {errors.file_no}
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="password">Access Code / Password</Label>
+                            <Label htmlFor="password">
+                                Access Code / Password
+                            </Label>
                             <Input
                                 id="password"
                                 type="password"
                                 placeholder="••••••••"
                                 value={data.password}
-                                className="h-12 bg-background focus:bg-background transition-colors text-base tracking-widest"
-                                onChange={(e) => setData('password', e.target.value)}
+                                className="h-12 bg-background text-base tracking-widest transition-colors focus:bg-background"
+                                onChange={(e) =>
+                                    setData('password', e.target.value)
+                                }
                             />
-                            {errors.password && <p className="text-sm font-medium text-destructive mt-1">{errors.password}</p>}
+                            {errors.password && (
+                                <p className="mt-1 text-sm font-medium text-destructive">
+                                    {errors.password}
+                                </p>
+                            )}
                         </div>
 
-                        <Button type="submit" className="w-full h-12 text-lg font-medium shadow-md transition-all hover:scale-[1.02] mt-4" disabled={processing}>
-                            {processing ? 'Authenticating...' : 'Sign In to Dashboard'}
+                        <Button
+                            type="submit"
+                            className="mt-4 h-12 w-full text-lg font-medium shadow-md transition-all hover:scale-[1.02]"
+                            disabled={processing}
+                        >
+                            {processing
+                                ? 'Authenticating...'
+                                : 'Sign In to Dashboard'}
                         </Button>
                     </form>
 
-                    <div className="mt-12 text-center text-sm text-muted-foreground border-t pt-8">
+                    <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
                         Having trouble logging in? <br className="sm:hidden" />
                         Please contact the invigilator immediately.
                     </div>

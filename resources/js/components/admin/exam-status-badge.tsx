@@ -5,22 +5,57 @@ interface ExamStatusBadgeProps {
     className?: string;
 }
 
-export function ExamStatusBadge({ status, className = '' }: ExamStatusBadgeProps) {
-    const variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default';
+export function ExamStatusBadge({
+    status,
+    className = '',
+}: ExamStatusBadgeProps) {
     const label = status.charAt(0).toUpperCase() + status.slice(1);
-    
+
     switch (status) {
         case 'active':
-            return <Badge variant="default" className={`bg-green-600 hover:bg-green-700 ${className}`}>{label}</Badge>;
+            return (
+                <Badge
+                    variant="default"
+                    className={`bg-green-600 hover:bg-green-700 ${className}`}
+                >
+                    {label}
+                </Badge>
+            );
         case 'paused':
-            return <Badge variant="outline" className={`text-amber-600 border-amber-600 ${className}`}>{label}</Badge>;
+            return (
+                <Badge
+                    variant="outline"
+                    className={`border-amber-600 text-amber-600 ${className}`}
+                >
+                    {label}
+                </Badge>
+            );
         case 'completed':
-            return <Badge variant="secondary" className={`bg-gray-200 text-gray-800 ${className}`}>{label}</Badge>;
+            return (
+                <Badge
+                    variant="secondary"
+                    className={`bg-gray-200 text-gray-800 ${className}`}
+                >
+                    {label}
+                </Badge>
+            );
         case 'expired':
-            return <Badge variant="destructive" className={className}>{label}</Badge>;
+            return (
+                <Badge variant="destructive" className={className}>
+                    {label}
+                </Badge>
+            );
         case 'draft':
-            return <Badge variant="outline" className={className}>{label}</Badge>;
+            return (
+                <Badge variant="outline" className={className}>
+                    {label}
+                </Badge>
+            );
         default:
-            return <Badge variant="secondary" className={className}>{label}</Badge>;
+            return (
+                <Badge variant="secondary" className={className}>
+                    {label}
+                </Badge>
+            );
     }
 }
