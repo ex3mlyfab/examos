@@ -23,6 +23,12 @@ class CandidateController extends Controller
         }
 
         $candidates = $query->paginate(20)->withQueryString();
+        
+        // Make raw_password visible for the admin
+        $candidates->getCollection()->transform(function($candidate) {
+            return $candidate->makeVisible('raw_password');
+        });
+
         $seasons = ExamSeason::orderBy('created_at', 'desc')->get();
 
         return Inertia::render('Admin/Candidates/Index', [
@@ -105,6 +111,8 @@ class CandidateController extends Controller
     public function show(Candidate $candidate)
     {
         $candidate->load('examSeason', 'subjects');
+        $candidate->makeVisible('raw_password');
+        
         return Inertia::render('Admin/Candidates/Show', [
             'candidate' => $candidate
         ]);
