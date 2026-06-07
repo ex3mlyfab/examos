@@ -15,8 +15,9 @@ class ExamSeasonController extends Controller
     public function index()
     {
         $seasons = ExamSeason::orderBy('created_at', 'desc')->paginate(10);
+
         return Inertia::render('Admin/ExamSeasons/Index', [
-            'seasons' => $seasons
+            'seasons' => $seasons,
         ]);
     }
 
@@ -42,7 +43,7 @@ class ExamSeasonController extends Controller
             'status' => 'required|in:draft,active,completed',
             'allow_result_review' => 'boolean',
             'exam_mode' => 'required|in:per_subject,combined',
-            'combo_settings' => 'nullable|array'
+            'combo_settings' => 'nullable|array',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -58,7 +59,7 @@ class ExamSeasonController extends Controller
     public function show(ExamSeason $examSeason)
     {
         return Inertia::render('Admin/ExamSeasons/Show', [
-            'season' => $examSeason
+            'season' => $examSeason,
         ]);
     }
 
@@ -68,7 +69,7 @@ class ExamSeasonController extends Controller
     public function edit(ExamSeason $examSeason)
     {
         return Inertia::render('Admin/ExamSeasons/Edit', [
-            'season' => $examSeason
+            'season' => $examSeason,
         ]);
     }
 
@@ -79,14 +80,14 @@ class ExamSeasonController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:exam_seasons,code,' . $examSeason->id,
+            'code' => 'required|string|max:50|unique:exam_seasons,code,'.$examSeason->id,
             'description' => 'nullable|string',
             'starts_at' => 'nullable|date',
             'ends_at' => 'nullable|date|after_or_equal:starts_at',
             'status' => 'required|in:draft,active,completed',
             'allow_result_review' => 'boolean',
             'exam_mode' => 'required|in:per_subject,combined',
-            'combo_settings' => 'nullable|array'
+            'combo_settings' => 'nullable|array',
         ]);
 
         $examSeason->update($validated);
@@ -104,4 +105,3 @@ class ExamSeasonController extends Controller
         return redirect()->route('admin.exam-seasons.index')->with('success', 'Exam Season deleted successfully.');
     }
 }
-

@@ -2,18 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\ExamSeason;
 use App\Models\Candidate;
+use App\Models\ExamSeason;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ExamResultsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class ExamResultsExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
     protected $season;
+
     protected $subjects;
 
     public function __construct(ExamSeason $season)
@@ -42,7 +43,7 @@ class ExamResultsExport implements FromCollection, WithHeadings, WithMapping, Sh
 
         // Add a column for each subject
         foreach ($this->subjects as $subject) {
-            $headers[] = $subject->name . ' Score (%)';
+            $headers[] = $subject->name.' Score (%)';
         }
 
         $headers[] = 'Average Score (%)';
@@ -71,7 +72,7 @@ class ExamResultsExport implements FromCollection, WithHeadings, WithMapping, Sh
                 $row[] = number_format($session->score, 2);
                 $totalScore += $session->score;
                 $completedSubjectsCount++;
-                if (!$session->passed) {
+                if (! $session->passed) {
                     $allPassed = false;
                 }
             } else {
@@ -88,7 +89,7 @@ class ExamResultsExport implements FromCollection, WithHeadings, WithMapping, Sh
         // Simplistic logic: passed if they took all subjects and passed all of them
         if ($completedSubjectsCount === 0) {
             $row[] = 'Not Started';
-        } else if ($completedSubjectsCount < $this->subjects->count()) {
+        } elseif ($completedSubjectsCount < $this->subjects->count()) {
             $row[] = 'Incomplete';
         } else {
             $row[] = $allPassed ? 'Passed' : 'Failed';
@@ -100,7 +101,7 @@ class ExamResultsExport implements FromCollection, WithHeadings, WithMapping, Sh
     public function styles(Worksheet $sheet)
     {
         return [
-            1    => ['font' => ['bold' => true]],
+            1 => ['font' => ['bold' => true]],
         ];
     }
 }

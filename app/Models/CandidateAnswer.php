@@ -12,7 +12,7 @@ class CandidateAnswer extends Model
         'question_id',
         'selected_option_id',
         'is_correct',
-        'is_flagged'
+        'is_flagged',
     ];
 
     protected function casts(): array

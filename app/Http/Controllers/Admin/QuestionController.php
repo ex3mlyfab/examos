@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Question;
-use App\Models\Subject;
 use App\Models\QuestionOption;
+use App\Models\Subject;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class QuestionController extends Controller
 {
@@ -32,7 +32,7 @@ class QuestionController extends Controller
         return Inertia::render('Admin/Questions/Index', [
             'questions' => $questions,
             'subjects' => $subjects,
-            'filters' => $request->only(['subject_id'])
+            'filters' => $request->only(['subject_id']),
         ]);
     }
 
@@ -44,7 +44,7 @@ class QuestionController extends Controller
         $subjects = Subject::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/Questions/Create', [
-            'subjects' => $subjects
+            'subjects' => $subjects,
         ]);
     }
 
@@ -62,7 +62,7 @@ class QuestionController extends Controller
             'options' => 'required|array|min:2',
             'options.*.option_label' => 'required|string|max:10',
             'options.*.option_text' => 'required|string',
-            'options.*.is_correct' => 'required|boolean'
+            'options.*.is_correct' => 'required|boolean',
         ]);
 
         $imagePath = null;
@@ -78,14 +78,14 @@ class QuestionController extends Controller
                 'image_path' => $imagePath,
                 'marks' => $validated['marks'],
                 'is_active' => $validated['is_active'] ?? true,
-                'created_by' => auth()->id()
+                'created_by' => auth()->id(),
             ]);
 
             foreach ($validated['options'] as $opt) {
                 $question->options()->create([
                     'option_label' => $opt['option_label'],
                     'option_text' => $opt['option_text'],
-                    'is_correct' => $opt['is_correct']
+                    'is_correct' => $opt['is_correct'],
                 ]);
             }
         });
@@ -99,8 +99,9 @@ class QuestionController extends Controller
     public function show(Question $question)
     {
         $question->load(['subject', 'options']);
+
         return Inertia::render('Admin/Questions/Show', [
-            'question' => $question
+            'question' => $question,
         ]);
     }
 
@@ -114,7 +115,7 @@ class QuestionController extends Controller
 
         return Inertia::render('Admin/Questions/Edit', [
             'question' => $question,
-            'subjects' => $subjects
+            'subjects' => $subjects,
         ]);
     }
 
@@ -134,7 +135,7 @@ class QuestionController extends Controller
             'options.*.id' => 'nullable|exists:question_options,id',
             'options.*.option_label' => 'required|string|max:10',
             'options.*.option_text' => 'required|string',
-            'options.*.is_correct' => 'required|boolean'
+            'options.*.is_correct' => 'required|boolean',
         ]);
 
         $imagePath = $question->image_path;
@@ -154,12 +155,12 @@ class QuestionController extends Controller
                 'question_text' => $validated['question_text'],
                 'image_path' => $imagePath,
                 'marks' => $validated['marks'],
-                'is_active' => $validated['is_active'] ?? true
+                'is_active' => $validated['is_active'] ?? true,
             ]);
 
             // Track IDs to keep
             $keepOptionIds = [];
-            
+
             foreach ($validated['options'] as $opt) {
                 if (isset($opt['id']) && $opt['id']) {
                     // Update existing
@@ -168,7 +169,7 @@ class QuestionController extends Controller
                         $questionOption->update([
                             'option_label' => $opt['option_label'],
                             'option_text' => $opt['option_text'],
-                            'is_correct' => $opt['is_correct']
+                            'is_correct' => $opt['is_correct'],
                         ]);
                         $keepOptionIds[] = $questionOption->id;
                     }
@@ -177,7 +178,7 @@ class QuestionController extends Controller
                     $newOption = $question->options()->create([
                         'option_label' => $opt['option_label'],
                         'option_text' => $opt['option_text'],
-                        'is_correct' => $opt['is_correct']
+                        'is_correct' => $opt['is_correct'],
                     ]);
                     $keepOptionIds[] = $newOption->id;
                 }
@@ -195,7 +196,7 @@ class QuestionController extends Controller
      */
     public function destroy(Question $question)
     {
-        // Options cascade delete usually handled by database FK constraints, 
+        // Options cascade delete usually handled by database FK constraints,
         // but model event might be needed depending on migration.
         // We'll let SoftDeletes or DB handle it.
         $question->delete();
@@ -221,11 +222,11 @@ class QuestionController extends Controller
         $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
-            
+
             // Sample rows
             fputcsv($file, ['MTH101', 'What is 2 + 2?', '1', '3', '4', '5', '6', 'B']);
             fputcsv($file, ['MTH101', 'What is the square root of 16?', '2', '2', '4', '8', '16', 'B']);
-            
+
             fclose($file);
         };
 
@@ -238,22 +239,24 @@ class QuestionController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:5120'
+            'file' => 'required|file|mimes:csv,txt|max:5120',
         ]);
 
         $file = $request->file('file');
-        
+
         try {
             DB::transaction(function () use ($file) {
-                $handle = fopen($file->getRealPath(), "r");
-                $header = fgetcsv($handle, 1000, ",");
-                
+                $handle = fopen($file->getRealPath(), 'r');
+                $header = fgetcsv($handle, 1000, ',');
+
                 $subjectsByCode = Subject::all()->keyBy('code');
 
                 $count = 0;
-                while (($data = fgetcsv($handle, 1000, ",")) !== false) {
-                    if (count($data) < 8) continue; // Skip malformed rows
-                    
+                while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                    if (count($data) < 8) {
+                        continue;
+                    } // Skip malformed rows
+
                     $subjectCode = trim($data[0]);
                     $questionText = trim($data[1]);
                     $marks = (int) trim($data[2]);
@@ -263,7 +266,7 @@ class QuestionController extends Controller
                     $optD = trim($data[6]);
                     $correctLabel = strtoupper(trim($data[7]));
 
-                    if (!$questionText || !isset($subjectsByCode[$subjectCode])) {
+                    if (! $questionText || ! isset($subjectsByCode[$subjectCode])) {
                         continue;
                     }
 
@@ -275,7 +278,7 @@ class QuestionController extends Controller
                         'question_type' => 'multiple_choice',
                         'marks' => $marks ?: 1,
                         'is_active' => true,
-                        'created_by' => auth()->id()
+                        'created_by' => auth()->id(),
                     ]);
 
                     $optionsData = [
@@ -286,11 +289,13 @@ class QuestionController extends Controller
                     ];
 
                     foreach ($optionsData as $opt) {
-                        if ($opt['text'] === '') continue;
+                        if ($opt['text'] === '') {
+                            continue;
+                        }
                         $question->options()->create([
                             'option_label' => $opt['label'],
                             'option_text' => $opt['text'],
-                            'is_correct' => ($opt['label'] === $correctLabel)
+                            'is_correct' => ($opt['label'] === $correctLabel),
                         ]);
                     }
                     $count++;
@@ -300,7 +305,8 @@ class QuestionController extends Controller
 
             return redirect()->route('admin.questions.index')->with('success', 'Successfully imported questions.');
         } catch (\Exception $e) {
-            Log::error('Question import failed: ' . $e->getMessage());
+            Log::error('Question import failed: '.$e->getMessage());
+
             return redirect()->back()->withErrors(['file' => 'Failed to process CSV file. Ensure the format matches the template.']);
         }
     }

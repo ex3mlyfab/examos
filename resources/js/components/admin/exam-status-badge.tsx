@@ -6,8 +6,8 @@ interface ExamStatusBadgeProps {
 }
 
 export function ExamStatusBadge({ status, className = '' }: ExamStatusBadgeProps) {
-    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default';
-    let label = status.charAt(0).toUpperCase() + status.slice(1);
+    const variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default';
+    const label = status.charAt(0).toUpperCase() + status.slice(1);
     
     switch (status) {
         case 'active':

@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ArrowLeft, Check, X, FileText, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 interface Option {
@@ -214,6 +214,7 @@ export default function ResultsShow({ session }: PageProps) {
 
 ResultsShow.layout = (page: React.ReactNode) => {
     const AppLayout = require('@/layouts/app-layout').default;
+
     return (
         <AppLayout breadcrumbs={[
             { title: 'Results', href: '/admin/results' },

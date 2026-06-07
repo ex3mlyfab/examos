@@ -11,7 +11,7 @@ class QuestionOption extends Model
         'question_id',
         'option_label',
         'option_text',
-        'is_correct'
+        'is_correct',
     ];
 
     protected function casts(): array

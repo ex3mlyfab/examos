@@ -21,7 +21,7 @@ class CandidateExamSession extends Model implements Auditable
         'completed_at',
         'question_order',
         'score',
-        'passed'
+        'passed',
     ];
 
     protected function casts(): array

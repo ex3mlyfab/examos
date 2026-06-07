@@ -1,15 +1,16 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
+import { PlusCircle, Edit, Trash2, Upload, Download } from 'lucide-react';
+import type { FormEvent} from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Edit, Trash2, Upload, Download } from 'lucide-react';
-import { useForm } from '@inertiajs/react';
-import { FormEvent, useState } from 'react';
-import { Subject } from '@/types/exam';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { Subject } from '@/types/exam';
 
 interface Question {
     id: number;

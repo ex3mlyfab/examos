@@ -2,18 +2,18 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\DeviceFingerprintService;
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
-use App\Services\DeviceFingerprintService;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class EnsureDeviceNotLocked
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -31,7 +31,7 @@ class EnsureDeviceNotLocked
                 return redirect()->route('candidate.login')
                     ->withErrors(['device' => 'Your account is locked to another device. Please contact an admin.']);
             }
-            
+
             // If they are on the same device but not locked, re-lock them (e.g. admin released them and they just logged back in)
             $deviceService->lockDevice($candidate, $request);
         }

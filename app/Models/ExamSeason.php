@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class ExamSeason extends Model implements Auditable
@@ -22,7 +22,7 @@ class ExamSeason extends Model implements Auditable
         'logout_grace_minutes',
         'status',
         'allow_result_review',
-        'created_by'
+        'created_by',
     ];
 
     protected function casts(): array

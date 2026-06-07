@@ -1,9 +1,9 @@
 import { Head, useForm, Link } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { BookOpen, ShieldCheck, ArrowLeft } from 'lucide-react';
+import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BookOpen, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 export default function Login() {
     const { data, setData, post, processing, errors } = useForm({

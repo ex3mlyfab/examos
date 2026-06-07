@@ -18,7 +18,7 @@ class DeviceFingerprintService
         $lang = $request->header('Accept-Language', 'unknown');
         $ip = $request->ip() ?? 'unknown';
 
-        return hash('sha256', $ua . '|' . $lang . '|' . $ip);
+        return hash('sha256', $ua.'|'.$lang.'|'.$ip);
     }
 
     /**
@@ -46,12 +46,12 @@ class DeviceFingerprintService
     public function isLockedToOtherDevice(Candidate $candidate, Request $request): bool
     {
         $session = $candidate->deviceSession;
-        
-        if (!$session) {
+
+        if (! $session) {
             return false;
         }
 
-        if (!$session->is_locked) {
+        if (! $session->is_locked) {
             return false; // Admin has released it
         }
 

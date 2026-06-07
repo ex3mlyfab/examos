@@ -2,24 +2,23 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\ExamResultsExport;
 use App\Http\Controllers\Controller;
 use App\Models\Candidate;
 use App\Models\CandidateExamSession;
 use App\Models\ExamSeason;
-use App\Models\Subject;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\ExamResultsExport;
 
 class ResultController extends Controller
 {
     public function index(Request $request)
     {
         $seasonId = $request->input('season_id');
-        
+
         // If no season provided, pick the active one or the most recently created
-        if (!$seasonId) {
+        if (! $seasonId) {
             $season = ExamSeason::where('status', 'active')->first() ?? ExamSeason::latest()->first();
             $seasonId = $season ? $season->id : null;
         } else {
@@ -27,7 +26,7 @@ class ResultController extends Controller
         }
 
         $seasons = ExamSeason::select('id', 'name', 'status', 'exam_mode')->orderBy('created_at', 'desc')->get();
-        
+
         $candidates = [];
         $subjects = [];
 
@@ -43,7 +42,7 @@ class ResultController extends Controller
                 ->when($request->search, function ($query, $search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('file_no', 'like', "%{$search}%")
-                          ->orWhere('name', 'like', "%{$search}%");
+                            ->orWhere('name', 'like', "%{$search}%");
                     });
                 })
                 ->paginate(20)
@@ -65,7 +64,7 @@ class ResultController extends Controller
             'candidate',
             'subject',
             'answers.question.options',
-            'answers.selectedOption'
+            'answers.selectedOption',
         ]);
 
         return Inertia::render('Admin/Results/Show', [
@@ -78,6 +77,6 @@ class ResultController extends Controller
         $seasonId = $request->input('season_id');
         $season = ExamSeason::findOrFail($seasonId);
 
-        return Excel::download(new ExamResultsExport($season), 'results_' . str_replace(' ', '_', strtolower($season->name)) . '.xlsx');
+        return Excel::download(new ExamResultsExport($season), 'results_'.str_replace(' ', '_', strtolower($season->name)).'.xlsx');
     }
 }

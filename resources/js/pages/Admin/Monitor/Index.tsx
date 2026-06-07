@@ -1,11 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ExamStatusBadge } from '@/components/admin/exam-status-badge';
 import { MonitorPlay, Clock, SmartphoneNfc, AlertCircle, RefreshCw, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { ExamStatusBadge } from '@/components/admin/exam-status-badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface MonitorSession {
     id: number;
@@ -38,16 +38,22 @@ export default function MonitorIndex({ sessions: initialSessions }: PageProps) {
     useEffect(() => {
         const timer = setInterval(() => {
             setSessions(prev => {
-                if (!Array.isArray(prev)) return prev;
+                if (!Array.isArray(prev)) {
+return prev;
+}
+
                 return prev.map(s => {
                     const currentRem = Number(s.remaining_seconds) || 0;
+
                     if (currentRem > 0) {
                         return { ...s, remaining_seconds: currentRem - 1 };
                     }
+
                     return s;
                 });
             });
         }, 1000);
+
         return () => clearInterval(timer);
     }, []);
 
@@ -69,13 +75,18 @@ export default function MonitorIndex({ sessions: initialSessions }: PageProps) {
                 }
             });
         }, 10000);
+
         return () => clearInterval(syncTimer);
     }, []);
 
     const formatTime = (seconds: number) => {
-        if (seconds <= 0) return '00:00';
+        if (seconds <= 0) {
+return '00:00';
+}
+
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
+
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 

@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class Candidate extends Authenticatable implements Auditable
 {
-    use SoftDeletes, \OwenIt\Auditing\Auditable;
+    use \OwenIt\Auditing\Auditable, SoftDeletes;
 
     protected $fillable = [
         'file_no',
@@ -25,7 +26,7 @@ class Candidate extends Authenticatable implements Auditable
         'password',
         'raw_password',
         'exam_season_id',
-        'is_active'
+        'is_active',
     ];
 
     protected $hidden = [
@@ -61,7 +62,7 @@ class Candidate extends Authenticatable implements Auditable
         return $this->hasMany(CandidateExamSession::class);
     }
 
-    public function deviceSession(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function deviceSession(): HasOne
     {
         return $this->hasOne(DeviceSession::class);
     }

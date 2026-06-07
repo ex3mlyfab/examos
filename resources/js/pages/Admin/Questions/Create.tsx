@@ -1,14 +1,14 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
-import { FormEvent } from 'react';
-import { Subject } from '@/types/exam';
+import type { Subject } from '@/types/exam';
 
 interface PageProps {
     subjects: Subject[];

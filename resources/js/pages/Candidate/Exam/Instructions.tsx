@@ -1,9 +1,10 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Subject } from '@/types/exam';
 import { Clock, AlertTriangle, CheckCircle2, ChevronLeft, ShieldAlert } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import type { Subject } from '@/types/exam';
 
 export default function Instructions({ subject }: { subject: Subject }) {
     const { post, processing } = useForm();
@@ -11,7 +12,11 @@ export default function Instructions({ subject }: { subject: Subject }) {
 
     const startExam = (e: FormEvent) => {
         e.preventDefault();
-        if (!accepted) return;
+
+        if (!accepted) {
+return;
+}
+
         post(`/candidate/start/${subject.id}`);
     };
 

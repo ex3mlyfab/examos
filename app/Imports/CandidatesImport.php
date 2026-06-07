@@ -6,14 +6,16 @@ use App\Models\Candidate;
 use App\Models\ExamSeason;
 use App\Services\CredentialGeneratorService;
 use App\Services\SubjectAllocationService;
+use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Illuminate\Support\Facades\Hash;
 
 class CandidatesImport implements ToModel, WithHeadingRow
 {
     protected ExamSeason $season;
+
     protected CredentialGeneratorService $credentialGenerator;
+
     protected SubjectAllocationService $subjectAllocator;
 
     public function __construct(ExamSeason $season)
@@ -29,7 +31,7 @@ class CandidatesImport implements ToModel, WithHeadingRow
         $name = $row['name'] ?? null;
         $telephone = $row['telephone'] ?? null;
 
-        if (!$fileNo || !$name || !$telephone) {
+        if (! $fileNo || ! $name || ! $telephone) {
             return null; // Skip invalid rows
         }
 

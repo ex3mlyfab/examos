@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Subject;
 use App\Models\ExamSeason;
+use App\Models\Subject;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -27,7 +27,7 @@ class SubjectController extends Controller
         return Inertia::render('Admin/Subjects/Index', [
             'subjects' => $subjects,
             'seasons' => $seasons,
-            'filters' => $request->only(['season_id'])
+            'filters' => $request->only(['season_id']),
         ]);
     }
 
@@ -39,7 +39,7 @@ class SubjectController extends Controller
         $seasons = ExamSeason::orderBy('created_at', 'desc')->get();
 
         return Inertia::render('Admin/Subjects/Create', [
-            'seasons' => $seasons
+            'seasons' => $seasons,
         ]);
     }
 
@@ -57,7 +57,7 @@ class SubjectController extends Controller
             'pass_mark' => 'required|integer|min:0|max:100',
             'instructions' => 'nullable|string',
             'allocation_criteria' => 'nullable|json',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         if (isset($validated['allocation_criteria'])) {
@@ -75,8 +75,9 @@ class SubjectController extends Controller
     public function show(Subject $subject)
     {
         $subject->load('examSeason');
+
         return Inertia::render('Admin/Subjects/Show', [
-            'subject' => $subject
+            'subject' => $subject,
         ]);
     }
 
@@ -86,7 +87,7 @@ class SubjectController extends Controller
     public function edit(Subject $subject)
     {
         $seasons = ExamSeason::orderBy('created_at', 'desc')->get();
-        
+
         // Convert allocation_criteria array back to JSON string for the form if it exists
         $subjectData = $subject->toArray();
         if (isset($subjectData['allocation_criteria']) && is_array($subjectData['allocation_criteria'])) {
@@ -95,7 +96,7 @@ class SubjectController extends Controller
 
         return Inertia::render('Admin/Subjects/Edit', [
             'subject' => $subjectData,
-            'seasons' => $seasons
+            'seasons' => $seasons,
         ]);
     }
 
@@ -107,13 +108,13 @@ class SubjectController extends Controller
         $validated = $request->validate([
             'exam_season_id' => 'required|exists:exam_seasons,id',
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:subjects,code,' . $subject->id,
+            'code' => 'required|string|max:50|unique:subjects,code,'.$subject->id,
             'duration_minutes' => 'required|integer|min:1',
             'total_questions_to_display' => 'required|integer|min:1',
             'pass_mark' => 'required|integer|min:0|max:100',
             'instructions' => 'nullable|string',
             'allocation_criteria' => 'nullable|json',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         if (isset($validated['allocation_criteria'])) {

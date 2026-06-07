@@ -2,17 +2,16 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\ExamSeason;
-use App\Models\Subject;
-use App\Models\Question;
 use App\Models\Candidate;
+use App\Models\ExamSeason;
+use App\Models\Question;
+use App\Models\Subject;
 use App\Models\User;
-use App\Models\CandidateExamSession;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Hash;
 use App\Services\CredentialGeneratorService;
 use App\Services\ExamSessionService;
+use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class TestDataSeeder extends Seeder
 {
@@ -27,7 +26,7 @@ class TestDataSeeder extends Seeder
         // ---------------------------------------------------------
         $standardSeason = ExamSeason::create([
             'name' => '2026 Standard Examinations',
-            'code' => 'STD-' . time(),
+            'code' => 'STD-'.time(),
             'description' => 'A standard season with single subject execution.',
             'starts_at' => Carbon::now()->subDays(2),
             'ends_at' => Carbon::now()->addDays(5),
@@ -74,7 +73,7 @@ class TestDataSeeder extends Seeder
         // ---------------------------------------------------------
         $comboSeason = ExamSeason::create([
             'name' => '2026 Combo Entrance Exams',
-            'code' => 'CMB-' . time(),
+            'code' => 'CMB-'.time(),
             'description' => 'A combo season testing multiple subjects seamlessly.',
             'starts_at' => Carbon::now()->subDays(1),
             'ends_at' => Carbon::now()->addDays(6),
@@ -83,7 +82,7 @@ class TestDataSeeder extends Seeder
             'exam_mode' => 'combined',
             'combo_settings' => [
                 'mode' => 'sequential',
-                'auto_switch' => true
+                'auto_switch' => true,
             ],
             'allow_result_review' => true,
             'created_by' => $admin->id,
@@ -136,15 +135,15 @@ class TestDataSeeder extends Seeder
 
         $this->command->info('Seeded Combo Exam Season with Results.');
 
-        $this->command->line("");
-        $this->command->info("========================================");
-        $this->command->info("TEST CANDIDATE CREDENTIALS:");
+        $this->command->line('');
+        $this->command->info('========================================');
+        $this->command->info('TEST CANDIDATE CREDENTIALS:');
         foreach (array_merge($stdCandidates, $cmbCandidates) as $c) {
             $this->command->line("Season:   {$c->examSeason->name}");
             $this->command->line("Name:     {$c->name}");
             $this->command->line("File No:  {$c->file_no}");
             $this->command->line("Password: {$c->raw_password}");
-            $this->command->line("----------------------------------------");
+            $this->command->line('----------------------------------------');
         }
     }
 
@@ -176,13 +175,13 @@ class TestDataSeeder extends Seeder
         $candidates = [];
         for ($i = 1; $i <= $count; $i++) {
             $firstName = "Test{$prefix}User{$i}";
-            $fileNo = $prefix . '-' . str_pad((string)rand(1000, 9999), 4, '0', STR_PAD_LEFT);
+            $fileNo = $prefix.'-'.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT);
             $rawPassword = $service->generatePassword($firstName, $fileNo);
 
             $candidate = Candidate::create([
                 'file_no' => $fileNo,
                 'name' => "{$firstName} Doe",
-                'email' => strtolower($firstName) . '_' . time() . "@example.com",
+                'email' => strtolower($firstName).'_'.time().'@example.com',
                 'department' => 'Science',
                 'level' => '100',
                 'password' => Hash::make($rawPassword),
@@ -190,7 +189,7 @@ class TestDataSeeder extends Seeder
                 'exam_season_id' => $season->id,
                 'is_active' => true,
             ]);
-            
+
             foreach ($subjects as $subject) {
                 $candidate->subjects()->attach($subject->id, [
                     'created_at' => now(),
@@ -200,6 +199,7 @@ class TestDataSeeder extends Seeder
 
             $candidates[] = $candidate;
         }
+
         return $candidates;
     }
 

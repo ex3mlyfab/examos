@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CandidateExamSession } from '@/types/exam';
 import { CheckCircle, XCircle, ChevronLeft, Award } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import type { CandidateExamSession } from '@/types/exam';
 
 interface PageProps {
     sessions: (CandidateExamSession & { subject: any })[];

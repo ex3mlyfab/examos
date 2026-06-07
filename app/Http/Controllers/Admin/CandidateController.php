@@ -17,15 +17,15 @@ class CandidateController extends Controller
     public function index(Request $request)
     {
         $query = Candidate::with('examSeason')->orderBy('created_at', 'desc');
-        
+
         if ($request->has('season_id') && $request->season_id) {
             $query->where('exam_season_id', $request->season_id);
         }
 
         $candidates = $query->paginate(20)->withQueryString();
-        
+
         // Make raw_password visible for the admin
-        $candidates->getCollection()->transform(function($candidate) {
+        $candidates->getCollection()->transform(function ($candidate) {
             return $candidate->makeVisible('raw_password');
         });
 
@@ -34,7 +34,7 @@ class CandidateController extends Controller
         return Inertia::render('Admin/Candidates/Index', [
             'candidates' => $candidates,
             'seasons' => $seasons,
-            'filters' => $request->only(['season_id'])
+            'filters' => $request->only(['season_id']),
         ]);
     }
 
@@ -53,7 +53,7 @@ class CandidateController extends Controller
 
         $columns = ['file_no', 'name', 'telephone', 'email', 'gender', 'department', 'level'];
 
-        $callback = function() use ($columns) {
+        $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             fclose($file);
@@ -68,9 +68,9 @@ class CandidateController extends Controller
     public function create()
     {
         $seasons = ExamSeason::whereIn('status', ['draft', 'active'])->get();
-        
+
         return Inertia::render('Admin/Candidates/Create', [
-            'seasons' => $seasons
+            'seasons' => $seasons,
         ]);
     }
 
@@ -88,14 +88,14 @@ class CandidateController extends Controller
             'gender' => 'nullable|in:M,F',
             'department' => 'nullable|string|max:255',
             'level' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         // Generate password from name and telephone as per requirement
         // Fallback to random if telephone is not provided
         $baseName = explode(' ', trim($validated['name']))[0];
         $basePhone = $validated['telephone'] ? substr($validated['telephone'], -4) : rand(1000, 9999);
-        $rawPassword = strtolower($baseName) . $basePhone;
+        $rawPassword = strtolower($baseName).$basePhone;
 
         $validated['raw_password'] = $rawPassword;
         $validated['password'] = Hash::make($rawPassword);
@@ -112,9 +112,9 @@ class CandidateController extends Controller
     {
         $candidate->load('examSeason', 'subjects');
         $candidate->makeVisible('raw_password');
-        
+
         return Inertia::render('Admin/Candidates/Show', [
-            'candidate' => $candidate
+            'candidate' => $candidate,
         ]);
     }
 
@@ -124,9 +124,10 @@ class CandidateController extends Controller
     public function edit(Candidate $candidate)
     {
         $seasons = ExamSeason::orderBy('created_at', 'desc')->get();
+
         return Inertia::render('Admin/Candidates/Edit', [
             'candidate' => $candidate,
-            'seasons' => $seasons
+            'seasons' => $seasons,
         ]);
     }
 
@@ -137,14 +138,14 @@ class CandidateController extends Controller
     {
         $validated = $request->validate([
             'exam_season_id' => 'required|exists:exam_seasons,id',
-            'file_no' => 'required|string|max:255|unique:candidates,file_no,' . $candidate->id,
+            'file_no' => 'required|string|max:255|unique:candidates,file_no,'.$candidate->id,
             'name' => 'required|string|max:255',
             'telephone' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'gender' => 'nullable|in:M,F',
             'department' => 'nullable|string|max:255',
             'level' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         $candidate->update($validated);

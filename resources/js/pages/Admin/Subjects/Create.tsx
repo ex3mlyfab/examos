@@ -1,14 +1,14 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, Save } from 'lucide-react';
+import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save } from 'lucide-react';
-import { FormEvent } from 'react';
-import { ExamSeason } from '@/types/exam';
+import type { ExamSeason } from '@/types/exam';
 
 interface PageProps {
     seasons: ExamSeason[];
@@ -36,6 +36,7 @@ export default function Create({ seasons }: PageProps) {
         e.preventDefault();
         
         let criteria: any = null;
+
         if (isCombinedMode) {
             if (data.allocation_type === 'base_combo') {
                 criteria = { is_base_combo_subject: true };

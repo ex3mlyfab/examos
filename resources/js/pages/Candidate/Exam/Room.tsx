@@ -1,14 +1,14 @@
 import { Head, router } from '@inertiajs/react';
+import { Clock, AlertCircle, ChevronLeft, ChevronRight, Flag, Send, Settings2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Subject, CandidateExamSession, Question, CandidateAnswer } from '@/types/exam';
-import { Clock, AlertCircle, ChevronLeft, ChevronRight, Flag, Send, Settings2 } from 'lucide-react';
-import { toast } from 'sonner';
+import type { Subject, CandidateExamSession, Question, CandidateAnswer } from '@/types/exam';
 
 interface PageProps {
     subject: Subject;
@@ -37,8 +37,13 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
             const initialFlagged: Record<number, boolean> = {};
             
             session.answers.forEach(ans => {
-                if (ans.selected_option_id) initialAnswers[ans.question_id] = ans.selected_option_id;
-                if (ans.is_flagged) initialFlagged[ans.question_id] = ans.is_flagged;
+                if (ans.selected_option_id) {
+initialAnswers[ans.question_id] = ans.selected_option_id;
+}
+
+                if (ans.is_flagged) {
+initialFlagged[ans.question_id] = ans.is_flagged;
+}
             });
             
             setAnswers(initialAnswers);
@@ -50,7 +55,9 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
 
     // Timer logic
     useEffect(() => {
-        if (isSubmitting) return;
+        if (isSubmitting) {
+return;
+}
 
         timerRef.current = setInterval(() => {
             const now = Date.now();
@@ -72,6 +79,7 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
                 .then(data => {
                     if (data.remainingSeconds !== undefined) {
                         const currentLocalRemaining = Math.round((endTimeRef.current - Date.now()) / 1000);
+
                         // Only correct if we are drifting significantly (e.g. > 5 seconds)
                         if (Math.abs(data.remainingSeconds - currentLocalRemaining) > 5) {
                             endTimeRef.current = Date.now() + data.remainingSeconds * 1000;
@@ -90,7 +98,9 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
 
     // WebSocket listener for admin release
     useEffect(() => {
-        if (!window.Echo || !session.candidate_id) return;
+        if (!window.Echo || !session.candidate_id) {
+return;
+}
         
         const channel = window.Echo.private(`candidate.${session.candidate_id}`);
         
@@ -111,10 +121,14 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
 
     // Keyboard navigation and shortcuts
     useEffect(() => {
-        if (questionsPerPage !== 1 || isSubmitting) return;
+        if (questionsPerPage !== 1 || isSubmitting) {
+return;
+}
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+return;
+}
 
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
@@ -124,11 +138,14 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
                 setCurrentPage(p => Math.min(totalPages - 1, p + 1));
             } else {
                 const key = e.key.toUpperCase();
+
                 if (['A', 'B', 'C', 'D'].includes(key)) {
                     const q = questions ? questions[currentPage] : null;
+
                     if (q && q.options) {
                         const optIndex = ['A', 'B', 'C', 'D'].indexOf(key);
                         const opt = q.options.find(o => o.option_label?.toUpperCase() === key) || q.options[optIndex];
+
                         if (opt) {
                             handleAnswerChange(q.id, opt.id);
                         }
@@ -138,6 +155,7 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
         };
 
         window.addEventListener('keydown', handleKeyDown);
+
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [questionsPerPage, currentPage, totalPages, questions, isSubmitting, flagged]);
 
@@ -195,7 +213,10 @@ export default function ExamRoom({ subject, session, questions, remainingSeconds
         const m = Math.floor((seconds % 3600) / 60);
         const s = seconds % 60;
         
-        if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        if (h > 0) {
+return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 

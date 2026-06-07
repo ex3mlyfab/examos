@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Str;
-
 class CredentialGeneratorService
 {
     /**
@@ -14,13 +12,13 @@ class CredentialGeneratorService
     {
         $firstName = explode(' ', trim($name))[0];
         $last4 = substr($fileNo, -4);
-        
+
         // Ensure at least 4 chars from file no if it's too short
         if (strlen($last4) < 4) {
             $last4 = str_pad($last4, 4, '0', STR_PAD_LEFT);
         }
 
-        return ucfirst(strtolower($firstName)) . '@' . $last4;
+        return ucfirst(strtolower($firstName)).'@'.$last4;
     }
 
     /**

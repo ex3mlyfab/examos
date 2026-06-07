@@ -21,7 +21,7 @@ class Subject extends Model implements Auditable
         'pass_mark',
         'instructions',
         'allocation_criteria',
-        'is_active'
+        'is_active',
     ];
 
     protected function casts(): array

@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Candidate;
-use App\Models\CandidateExamSession;
 use App\Models\CandidateAnswer;
+use App\Models\CandidateExamSession;
 use App\Models\Subject;
 
 class ExamSessionService
@@ -39,7 +39,7 @@ class ExamSessionService
     {
         // Get active questions
         $questions = $subject->questions()->where('is_active', true)->pluck('id')->toArray();
-        
+
         // Shuffle
         shuffle($questions);
 
@@ -95,7 +95,7 @@ class ExamSessionService
         // Calculate percentage (simplistic grading for now, out of total possible for the displayed questions)
         // If we didn't store total possible, we compute based on answers + unanswered from question_order
         // For accurate grading, we should calculate total marks of all questions in question_order.
-        
+
         $totalPossible = 0;
         if (is_array($session->question_order)) {
             $totalPossible = $session->subject->questions()->whereIn('id', $session->question_order)->sum('marks');
@@ -114,9 +114,12 @@ class ExamSessionService
 
     public function getRemainingSeconds(CandidateExamSession $session): int
     {
-        if (!$session->expires_at) return 0;
-        
+        if (! $session->expires_at) {
+            return 0;
+        }
+
         $diff = $session->expires_at->diffInSeconds(now(), false);
+
         return $diff < 0 ? abs($diff) : 0; // If diff is positive, it's past the expires_at
     }
 }

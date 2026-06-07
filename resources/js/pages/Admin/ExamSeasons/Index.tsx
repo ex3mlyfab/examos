@@ -1,9 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
+import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import { ExamSeason } from '@/types/exam';
+import type { ExamSeason } from '@/types/exam';
 
 interface PageProps {
     seasons: {

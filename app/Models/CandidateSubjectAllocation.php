@@ -9,7 +9,7 @@ class CandidateSubjectAllocation extends Model
 {
     protected $fillable = [
         'candidate_id',
-        'subject_id'
+        'subject_id',
     ];
 
     public function candidate(): BelongsTo

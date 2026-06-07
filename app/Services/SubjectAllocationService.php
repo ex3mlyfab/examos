@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Candidate;
-use App\Models\ExamSeason;
 use App\Models\Subject;
 
 class SubjectAllocationService
@@ -16,8 +15,10 @@ class SubjectAllocationService
     public function allocateBySubject(Candidate $candidate): void
     {
         $season = $candidate->examSeason;
-        
-        if (!$season) return;
+
+        if (! $season) {
+            return;
+        }
 
         $subjects = $season->subjects()->where('is_active', true)->get();
 
@@ -26,11 +27,14 @@ class SubjectAllocationService
         if ($season->isCombinedMode()) {
             foreach ($subjects as $subject) {
                 $criteria = $subject->allocation_criteria;
-                
-                if (empty($criteria)) continue;
+
+                if (empty($criteria)) {
+                    continue;
+                }
 
                 if (isset($criteria['is_base_combo_subject']) && $criteria['is_base_combo_subject'] === true) {
                     $allocatedIds[] = $subject->id;
+
                     continue;
                 }
 
@@ -41,7 +45,7 @@ class SubjectAllocationService
                         if (in_array($candidate->department, $departments)) {
                             $allocatedIds[] = $subject->id;
                         }
-                    } else if ($candidate->department === $departments) {
+                    } elseif ($candidate->department === $departments) {
                         $allocatedIds[] = $subject->id;
                     }
                 }
@@ -49,15 +53,16 @@ class SubjectAllocationService
         } else {
             foreach ($subjects as $subject) {
                 $criteria = $subject->allocation_criteria;
-                
+
                 if (empty($criteria)) {
                     $allocatedIds[] = $subject->id;
+
                     continue;
                 }
 
                 $matches = true;
                 foreach ($criteria as $key => $value) {
-                    if ($candidate->$key !== $value) {
+                    if ($value !== $candidate->$key) {
                         $matches = false;
                         break;
                     }

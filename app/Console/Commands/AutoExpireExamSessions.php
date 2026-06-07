@@ -2,10 +2,11 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\CandidateExamSession;
-use Illuminate\Support\Facades\Log;
+use App\Services\ExamSessionService;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class AutoExpireExamSessions extends Command
 {
@@ -38,6 +39,7 @@ class AutoExpireExamSessions extends Command
 
         if ($expiredSessions->isEmpty()) {
             $this->info('No expired sessions found.');
+
             return;
         }
 
@@ -47,16 +49,16 @@ class AutoExpireExamSessions extends Command
             $totalMarks = 0;
             $score = 0;
 
-            // Optional: You would normally inject ExamSessionService here, 
+            // Optional: You would normally inject ExamSessionService here,
             // but for command simplicity, we can do basic marking here
             // or resolve the service to call ->submit() if it exists.
             try {
-                $examService = app(\App\Services\ExamSessionService::class);
+                $examService = app(ExamSessionService::class);
                 $examService->submit($session);
                 $count++;
             } catch (\Exception $e) {
-                Log::error("Failed to auto-expire session {$session->id}: " . $e->getMessage());
-                
+                Log::error("Failed to auto-expire session {$session->id}: ".$e->getMessage());
+
                 // Fallback basic expiration
                 $session->update([
                     'status' => 'expired',

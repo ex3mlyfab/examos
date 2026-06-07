@@ -1,8 +1,8 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { LogOut, BookOpen, Clock, User, Award, CheckCircle } from 'lucide-react';
-import { Candidate, Subject, CandidateExamSession } from '@/types/exam';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import type { Candidate, Subject, CandidateExamSession } from '@/types/exam';
 
 interface PageProps {
     candidate: Candidate & {

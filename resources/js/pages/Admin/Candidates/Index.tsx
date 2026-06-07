@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { PlusCircle, Edit, Trash2, Upload, KeyRound, Download, Users, Printer, List } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Edit, Trash2, Upload, KeyRound, Download, Users, Printer, List } from 'lucide-react';
-import { ExamSeason } from '@/types/exam';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { ExamSeason } from '@/types/exam';
 
 interface Candidate {
     id: number;

@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Candidate;
 
 use App\Http\Controllers\Controller;
+use App\Models\CandidateExamSession;
+use App\Models\Subject;
+use App\Services\ExamSessionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Subject;
-use App\Models\CandidateExamSession;
-use App\Services\ExamSessionService;
 
 class ExamController extends Controller
 {
@@ -17,8 +17,9 @@ class ExamController extends Controller
     public function profile()
     {
         $candidate = auth('candidate')->user()->load(['examSeason', 'subjects', 'sessions']);
+
         return Inertia::render('Candidate/Profile', [
-            'candidate' => $candidate
+            'candidate' => $candidate,
         ]);
     }
 
@@ -28,7 +29,7 @@ class ExamController extends Controller
     public function instructions(Subject $subject)
     {
         $candidate = auth('candidate')->user();
-        if (!$candidate->subjects->contains($subject->id)) {
+        if (! $candidate->subjects->contains($subject->id)) {
             abort(403, 'You are not allocated to this subject.');
         }
 
@@ -42,7 +43,7 @@ class ExamController extends Controller
         }
 
         return Inertia::render('Candidate/Exam/Instructions', [
-            'subject' => $subject
+            'subject' => $subject,
         ]);
     }
 
@@ -52,7 +53,7 @@ class ExamController extends Controller
     public function start(Subject $subject, ExamSessionService $examService)
     {
         $candidate = auth('candidate')->user();
-        if (!$candidate->subjects->contains($subject->id)) {
+        if (! $candidate->subjects->contains($subject->id)) {
             abort(403);
         }
 
@@ -83,11 +84,11 @@ class ExamController extends Controller
 
         // Retrieve questions in order using field()
         $questions = null;
-        if (!empty($orderedIds)) {
+        if (! empty($orderedIds)) {
             $idsString = implode(',', $orderedIds);
             $questions = $subject->questions()
                 ->whereIn('id', $orderedIds)
-                ->with(['options' => function($q) {
+                ->with(['options' => function ($q) {
                     $q->select('id', 'question_id', 'option_label', 'option_text');
                 }])
                 ->orderByRaw("FIELD(id, {$idsString})")
@@ -98,7 +99,7 @@ class ExamController extends Controller
             'subject' => $subject,
             'session' => $session->load('answers'),
             'questions' => $questions,
-            'remainingSeconds' => $examService->getRemainingSeconds($session)
+            'remainingSeconds' => $examService->getRemainingSeconds($session),
         ]);
     }
 
@@ -108,7 +109,7 @@ class ExamController extends Controller
     public function syncTime(CandidateExamSession $session, ExamSessionService $examService)
     {
         return response()->json([
-            'remainingSeconds' => $examService->getRemainingSeconds($session)
+            'remainingSeconds' => $examService->getRemainingSeconds($session),
         ]);
     }
 
@@ -120,7 +121,7 @@ class ExamController extends Controller
         $validated = $request->validate([
             'question_id' => 'required|exists:questions,id',
             'option_id' => 'nullable|exists:question_options,id',
-            'is_flagged' => 'boolean'
+            'is_flagged' => 'boolean',
         ]);
 
         $answer = $examService->saveAnswer($session, $validated['question_id'], $validated['option_id'] ?? null, $validated['is_flagged'] ?? false);
@@ -134,6 +135,7 @@ class ExamController extends Controller
     public function submit(CandidateExamSession $session, ExamSessionService $examService)
     {
         $examService->submit($session);
+
         return redirect()->route('candidate.results');
     }
 
@@ -148,7 +150,7 @@ class ExamController extends Controller
             ->get();
 
         return Inertia::render('Candidate/Exam/Results', [
-            'sessions' => $sessions
+            'sessions' => $sessions,
         ]);
     }
 
@@ -166,11 +168,11 @@ class ExamController extends Controller
             'candidate',
             'subject',
             'answers.question.options',
-            'answers.selectedOption'
+            'answers.selectedOption',
         ]);
 
         return Inertia::render('Candidate/Exam/ShowResult', [
-            'session' => $session
+            'session' => $session,
         ]);
     }
 }

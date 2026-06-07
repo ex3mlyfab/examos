@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\AdminReleasedDevice;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\CandidateExamSession;
 use App\Models\Candidate;
+use App\Models\CandidateExamSession;
 use App\Models\DeviceSession;
 use App\Services\ExamSessionService;
-use App\Events\AdminReleasedDevice;
-use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ExamMonitorController extends Controller
 {
@@ -40,7 +40,7 @@ class ExamMonitorController extends Controller
                     'starts_at' => $session->started_at,
                     'expires_at' => $session->expires_at,
                     // If exam hasn't expired, find remaining seconds
-                    'remaining_seconds' => $session->expires_at && $session->expires_at->isFuture() 
+                    'remaining_seconds' => $session->expires_at && $session->expires_at->isFuture()
                         ? (int) abs($session->expires_at->diffInSeconds(Carbon::now(), false))
                         : 0,
                     'device_locked' => $session->candidate->deviceSession !== null,
@@ -76,7 +76,7 @@ class ExamMonitorController extends Controller
      */
     public function forceSubmit(Request $request, CandidateExamSession $session, ExamSessionService $examService)
     {
-        if (!in_array($session->status, ['active', 'paused'])) {
+        if (! in_array($session->status, ['active', 'paused'])) {
             return back()->with('error', 'Session is already completed or expired.');
         }
 
@@ -99,7 +99,7 @@ class ExamMonitorController extends Controller
             'minutes' => ['required', 'integer', 'min:1', 'max:120'],
         ]);
 
-        if (!in_array($session->status, ['active', 'paused'])) {
+        if (! in_array($session->status, ['active', 'paused'])) {
             return back()->with('error', 'Cannot extend time on a completed session.');
         }
 

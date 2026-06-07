@@ -1,12 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download, Search, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Subject {
     id: number;
@@ -63,7 +63,10 @@ export default function ResultsIndex({ seasons, currentSeason, subjects, candida
     };
 
     const handleExport = () => {
-        if (!currentSeason) return;
+        if (!currentSeason) {
+return;
+}
+
         window.location.href = `/admin/results/export?season_id=${currentSeason.id}`;
     };
 
@@ -156,10 +159,14 @@ export default function ResultsIndex({ seasons, currentSeason, subjects, candida
                                                     
                                                     {subjects.map(sub => {
                                                         const session = candidate.exam_sessions.find(s => s.subject_id === sub.id);
+
                                                         if (session && session.status === 'completed') {
                                                             totalScore += session.score;
                                                             completedCount++;
-                                                            if (!session.passed) allPassed = false;
+
+                                                            if (!session.passed) {
+allPassed = false;
+}
                                                         } else {
                                                             allPassed = false;
                                                         }
@@ -210,6 +217,7 @@ export default function ResultsIndex({ seasons, currentSeason, subjects, candida
 
 ResultsIndex.layout = (page: React.ReactNode) => {
     const AppLayout = require('@/layouts/app-layout').default;
+
     return (
         <AppLayout breadcrumbs={[{ title: 'Results', href: '/admin/results' }]}>
             {page}

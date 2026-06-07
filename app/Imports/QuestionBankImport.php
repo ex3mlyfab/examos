@@ -2,13 +2,13 @@
 
 namespace App\Imports;
 
-use App\Models\Subject;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use App\Models\Subject;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Illuminate\Support\Facades\DB;
 
 class QuestionBankImport implements ToCollection, WithHeadingRow
 {
@@ -23,7 +23,9 @@ class QuestionBankImport implements ToCollection, WithHeadingRow
     {
         DB::transaction(function () use ($rows) {
             foreach ($rows as $row) {
-                if (empty($row['question_text'])) continue;
+                if (empty($row['question_text'])) {
+                    continue;
+                }
 
                 $question = Question::create([
                     'subject_id' => $this->subject->id,

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('subject_id')->constrained()->onDelete('cascade');
             $table->text('question_text');
             $table->enum('question_type', ['single_choice', 'multi_choice', 'true_false'])
-                  ->default('single_choice');
+                ->default('single_choice');
             $table->string('image_path')->nullable();
             $table->unsignedInteger('marks')->default(1);
             $table->boolean('is_active')->default(true);

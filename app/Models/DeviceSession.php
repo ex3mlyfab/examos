@@ -13,7 +13,7 @@ class DeviceSession extends Model
         'ip_address',
         'user_agent',
         'last_active_at',
-        'is_locked'
+        'is_locked',
     ];
 
     protected function casts(): array
