@@ -37,6 +37,7 @@ export default function Profile() {
 
     const isCombinedCompleted = candidate.subjects?.length > 0 && candidate.subjects?.every((sub) => getSessionForSubject(sub.id)?.status === 'completed');
     const isCombinedActive = candidate.subjects?.some((sub) => getSessionForSubject(sub.id)?.status === 'active');
+    const allowResultReview = !!candidate.exam_season?.allow_result_review;
 
     return (
         <div className="min-h-screen bg-muted/20 pb-12 font-sans">
@@ -186,13 +187,31 @@ export default function Profile() {
                                 </CardContent>
                                 <CardFooter className="border-t bg-muted/5 pt-4">
                                     {isCombinedCompleted ? (
-                                        <Button
-                                            variant="secondary"
-                                            className="pointer-events-none w-full bg-green-100 text-green-800 hover:bg-green-200"
-                                            size="lg"
-                                        >
-                                            Completed
-                                        </Button>
+                                        <div className="flex w-full flex-col gap-2">
+                                            <Button
+                                                variant="secondary"
+                                                className="pointer-events-none w-full bg-green-100 text-green-800 hover:bg-green-200"
+                                                size="lg"
+                                            >
+                                                <CheckCircle className="mr-2 h-4 w-4" />
+                                                Completed
+                                            </Button>
+                                            {allowResultReview && (
+                                                <Link
+                                                    href="/candidate/results"
+                                                    className="w-full"
+                                                >
+                                                    <Button
+                                                        size="lg"
+                                                        variant="outline"
+                                                        className="w-full text-primary"
+                                                    >
+                                                        <Award className="mr-2 h-4 w-4" />
+                                                        View Results
+                                                    </Button>
+                                                </Link>
+                                            )}
+                                        </div>
                                     ) : isCombinedActive ? (
                                         <Link
                                             href="/candidate/combined-room"
@@ -271,12 +290,29 @@ export default function Profile() {
                                             </CardContent>
                                             <CardFooter className="pt-2">
                                                 {isCompleted ? (
-                                                    <Button
-                                                        variant="secondary"
-                                                        className="pointer-events-none w-full bg-green-100 text-green-800 hover:bg-green-200"
-                                                    >
-                                                        Completed
-                                                    </Button>
+                                                    <div className="flex w-full flex-col gap-2">
+                                                        <Button
+                                                            variant="secondary"
+                                                            className="pointer-events-none w-full bg-green-100 text-green-800 hover:bg-green-200"
+                                                        >
+                                                            <CheckCircle className="mr-1.5 h-4 w-4" />
+                                                            Completed
+                                                        </Button>
+                                                        {allowResultReview && (
+                                                            <Link
+                                                                href="/candidate/results"
+                                                                className="w-full"
+                                                            >
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="w-full text-primary"
+                                                                >
+                                                                    <Award className="mr-1.5 h-4 w-4" />
+                                                                    View Results
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                    </div>
                                                 ) : isActive ? (
                                                     <Link
                                                         href={`/candidate/room/${subject.id}`}

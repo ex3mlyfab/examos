@@ -16,39 +16,65 @@ class ExamMonitorController extends Controller
 {
     /**
      * Display the live monitor dashboard.
+     * Combined-exam candidates are collapsed into a single row.
      */
     public function index()
     {
-        $activeSessions = CandidateExamSession::with(['candidate', 'subject'])
+        $activeSessions = CandidateExamSession::with(['candidate.examSeason', 'candidate.deviceSession', 'subject'])
             ->whereIn('status', ['active', 'paused'])
             ->orderBy('updated_at', 'desc')
-            ->get()
-            ->map(function ($session) {
-                return [
-                    'id' => $session->id,
-                    'candidate' => [
-                        'id' => $session->candidate->id,
-                        'name' => $session->candidate->name,
-                        'file_no' => $session->candidate->file_no,
-                    ],
-                    'subject' => [
-                        'id' => $session->subject->id,
-                        'name' => $session->subject->name,
-                        'code' => $session->subject->code,
-                    ],
-                    'status' => $session->status,
-                    'starts_at' => $session->started_at,
-                    'expires_at' => $session->expires_at,
-                    // If exam hasn't expired, find remaining seconds
-                    'remaining_seconds' => $session->expires_at && $session->expires_at->isFuture()
-                        ? (int) abs($session->expires_at->diffInSeconds(Carbon::now(), false))
-                        : 0,
-                    'device_locked' => $session->candidate->deviceSession !== null,
-                ];
-            });
+            ->get();
+
+        // Group by candidate so combined-exam sittings appear as one row
+        $grouped = $activeSessions->groupBy('candidate_id')->map(function ($sessions) {
+            $first     = $sessions->first();
+            $candidate = $first->candidate;
+            $season    = $candidate->examSeason;
+            $isCombined = $season && $season->isCombinedMode();
+
+            // For the shared timer use the first active session's expires_at
+            $expiresAt = $sessions->sortBy('expires_at')->first()?->expires_at;
+            $remainingSeconds = $expiresAt && $expiresAt->isFuture()
+                ? (int) abs($expiresAt->diffInSeconds(Carbon::now(), false))
+                : 0;
+
+            return [
+                // Primary session id — used for single-subject actions
+                'id'              => $first->id,
+                // All session IDs for bulk combined actions
+                'session_ids'     => $sessions->pluck('id')->values(),
+                'candidate'       => [
+                    'id'      => $candidate->id,
+                    'name'    => $candidate->name,
+                    'file_no' => $candidate->file_no,
+                ],
+                'is_combined'     => $isCombined,
+                'season_name'     => $season?->name,
+                // Single subject (per_subject mode)
+                'subject'         => $isCombined ? null : [
+                    'id'   => $first->subject->id,
+                    'name' => $first->subject->name,
+                    'code' => $first->subject->code,
+                ],
+                // All subjects (combined mode)
+                'subjects'        => $isCombined
+                    ? $sessions->map(fn($s) => [
+                        'id'     => $s->subject->id,
+                        'name'   => $s->subject->name,
+                        'code'   => $s->subject->code,
+                        'status' => $s->status,
+                      ])->values()
+                    : [],
+                'status'          => $first->status,
+                'starts_at'       => $first->started_at,
+                'expires_at'      => $expiresAt,
+                'remaining_seconds' => $remainingSeconds,
+                'device_locked'   => $candidate->deviceSession !== null,
+            ];
+        })->values();
 
         return Inertia::render('Admin/Monitor/Index', [
-            'sessions' => $activeSessions,
+            'rows' => $grouped,
         ]);
     }
 
@@ -72,7 +98,7 @@ class ExamMonitorController extends Controller
     }
 
     /**
-     * Remotely end and score a candidate's ongoing exam.
+     * Remotely end and score a candidate's ongoing exam (single session).
      */
     public function forceSubmit(Request $request, CandidateExamSession $session, ExamSessionService $examService)
     {
@@ -91,7 +117,28 @@ class ExamMonitorController extends Controller
     }
 
     /**
-     * Add extra minutes to a candidate's session.
+     * Force-submit ALL active sessions for a combined-exam candidate.
+     */
+    public function forceSubmitCandidate(Request $request, Candidate $candidate, ExamSessionService $examService)
+    {
+        $sessions = CandidateExamSession::where('candidate_id', $candidate->id)
+            ->whereIn('status', ['active', 'paused'])
+            ->get();
+
+        foreach ($sessions as $session) {
+            $examService->submit($session);
+        }
+
+        activity()
+            ->performedOn($candidate)
+            ->causedBy(auth()->user())
+            ->log('Force submitted all combined exam sessions for candidate');
+
+        return back()->with('success', "All {$sessions->count()} combined sessions force-submitted.");
+    }
+
+    /**
+     * Add extra minutes to a single candidate session.
      */
     public function extendTime(Request $request, CandidateExamSession $session)
     {
@@ -114,5 +161,33 @@ class ExamMonitorController extends Controller
             ->log("Extended exam session by {$request->minutes} minutes");
 
         return back()->with('success', "Added {$request->minutes} minutes to the session.");
+    }
+
+    /**
+     * Extend time on ALL active sessions for a combined-exam candidate (keeps expiry in sync).
+     */
+    public function extendTimeCandidate(Request $request, Candidate $candidate)
+    {
+        $request->validate([
+            'minutes' => ['required', 'integer', 'min:1', 'max:120'],
+        ]);
+
+        $sessions = CandidateExamSession::where('candidate_id', $candidate->id)
+            ->whereIn('status', ['active', 'paused'])
+            ->get();
+
+        foreach ($sessions as $session) {
+            if ($session->expires_at) {
+                $session->expires_at = $session->expires_at->addMinutes($request->minutes);
+                $session->save();
+            }
+        }
+
+        activity()
+            ->performedOn($candidate)
+            ->causedBy(auth()->user())
+            ->log("Extended all combined exam sessions by {$request->minutes} minutes");
+
+        return back()->with('success', "Added {$request->minutes} minutes to all {$sessions->count()} combined sessions.");
     }
 }

@@ -130,13 +130,30 @@ class ExamController extends Controller
      */
     public function saveAnswer(Request $request, CandidateExamSession $session, ExamSessionService $examService)
     {
+        $candidate = auth('candidate')->user();
+
+        // Security: ensure the session belongs to the authenticated candidate
+        if ($session->candidate_id !== $candidate->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Ensure session is still active (not already submitted)
+        if ($session->status === 'completed') {
+            return response()->json(['error' => 'Session already completed'], 422);
+        }
+
         $validated = $request->validate([
-            'question_id' => 'required|exists:questions,id',
-            'option_id' => 'nullable|exists:question_options,id',
-            'is_flagged' => 'boolean',
+            'question_id' => 'required|integer',
+            'option_id'   => 'nullable|integer',
+            'is_flagged'  => 'boolean',
         ]);
 
-        $answer = $examService->saveAnswer($session, $validated['question_id'], $validated['option_id'] ?? null, $validated['is_flagged'] ?? false);
+        $answer = $examService->saveAnswer(
+            $session,
+            $validated['question_id'],
+            $validated['option_id'] ?? null,
+            $validated['is_flagged'] ?? false
+        );
 
         return response()->json(['success' => true, 'answer' => $answer]);
     }
@@ -156,15 +173,80 @@ class ExamController extends Controller
      */
     public function results()
     {
-        $candidate = auth('candidate')->user();
+        $candidate = auth('candidate')->user()->load(['examSeason', 'subjects']);
+        $season = $candidate->examSeason;
+
+        if (!$season) {
+            abort(404, 'No active exam season found.');
+        }
+
+        $allowReview = (bool) $season->allow_result_review;
+
+        // Base query – always load answers + question + options + selectedOption when review is on
         $sessions = CandidateExamSession::where('candidate_id', $candidate->id)
-            ->with('subject')
+            ->whereIn('subject_id', $candidate->subjects->pluck('id'))
+            ->with(
+                $allowReview
+                    ? ['subject', 'answers.question.options', 'answers.selectedOption']
+                    : ['subject']
+            )
             ->get();
 
+        // When review is enabled, pad each session so EVERY question in question_order
+        // appears in the results – even if the candidate never touched it.
+        if ($allowReview) {
+            foreach ($sessions as $session) {
+                $orderedIds = $session->question_order ?? [];
+                if (empty($orderedIds)) {
+                    continue;
+                }
+
+                // Index existing answers by question_id for O(1) lookup
+                $answeredByQuestion = $session->answers->keyBy('question_id');
+
+                // Load all questions that were presented (preserving order)
+                $questions = \App\Models\Question::with('options')
+                    ->whereIn('id', $orderedIds)
+                    ->get()
+                    ->keyBy('id');
+
+                $paddedAnswers = collect();
+                foreach ($orderedIds as $qid) {
+                    if ($answeredByQuestion->has($qid)) {
+                        // Real answer row — already has question + selectedOption loaded
+                        $paddedAnswers->push($answeredByQuestion->get($qid));
+                    } else {
+                        // Synthetic placeholder for an unanswered question
+                        $synth = new \App\Models\CandidateAnswer([
+                            'candidate_exam_session_id' => $session->id,
+                            'question_id'               => $qid,
+                            'selected_option_id'        => null,
+                            'is_correct'                => false,
+                            'is_flagged'                => false,
+                        ]);
+                        // Attach the question model so the template can render it
+                        $q = $questions->get($qid);
+                        if ($q) {
+                            $synth->setRelation('question', $q);
+                            $synth->setRelation('selectedOption', null);
+                        }
+                        $paddedAnswers->push($synth);
+                    }
+                }
+
+                // Replace the session's answers relation with the padded collection
+                $session->setRelation('answers', $paddedAnswers);
+            }
+        }
+
         return Inertia::render('Candidate/Exam/Results', [
-            'sessions' => $sessions,
+            'sessions'    => $sessions,
+            'season'      => $season,
+            'allowReview' => $allowReview,
+            'isCombined'  => $season->isCombinedMode(),
         ]);
     }
+
 
     /**
      * Show detailed scorecard for a specific session.
@@ -176,6 +258,16 @@ class ExamController extends Controller
             abort(403);
         }
 
+        $season = $candidate->examSeason;
+
+        if ($season && $season->isCombinedMode()) {
+            return redirect()->route('candidate.results');
+        }
+
+        if (!$season || !$season->allow_result_review) {
+            abort(403, 'Result review is not enabled for this examination.');
+        }
+
         $session->load([
             'candidate',
             'subject',
@@ -183,10 +275,44 @@ class ExamController extends Controller
             'answers.selectedOption',
         ]);
 
+        // Pad with placeholders for questions the candidate never answered
+        $orderedIds = $session->question_order ?? [];
+        if (!empty($orderedIds)) {
+            $answeredByQuestion = $session->answers->keyBy('question_id');
+
+            $questions = \App\Models\Question::with('options')
+                ->whereIn('id', $orderedIds)
+                ->get()
+                ->keyBy('id');
+
+            $padded = collect();
+            foreach ($orderedIds as $qid) {
+                if ($answeredByQuestion->has($qid)) {
+                    $padded->push($answeredByQuestion->get($qid));
+                } else {
+                    $synth = new \App\Models\CandidateAnswer([
+                        'candidate_exam_session_id' => $session->id,
+                        'question_id'               => $qid,
+                        'selected_option_id'        => null,
+                        'is_correct'                => false,
+                        'is_flagged'                => false,
+                    ]);
+                    $q = $questions->get($qid);
+                    if ($q) {
+                        $synth->setRelation('question', $q);
+                        $synth->setRelation('selectedOption', null);
+                    }
+                    $padded->push($synth);
+                }
+            }
+            $session->setRelation('answers', $padded);
+        }
+
         return Inertia::render('Candidate/Exam/ShowResult', [
             'session' => $session,
         ]);
     }
+
 
     /**
      * Show combined exam instructions.

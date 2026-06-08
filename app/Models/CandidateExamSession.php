@@ -27,11 +27,12 @@ class CandidateExamSession extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'started_at' => 'datetime',
-            'expires_at' => 'datetime',
-            'completed_at' => 'datetime',
-            'question_order' => 'array',
-            'passed' => 'boolean',
+            'started_at'    => 'datetime',
+            'expires_at'    => 'datetime',
+            'completed_at'  => 'datetime',
+            'question_order'=> 'array',
+            'passed'        => 'boolean',
+            'score'         => 'float',
         ];
     }
 

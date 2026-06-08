@@ -64,6 +64,17 @@ export interface Question {
     options?: QuestionOption[]; // Injected via relations
 }
 
+export interface CandidateAnswer {
+    id: number;
+    candidate_exam_session_id: number;
+    question_id: number;
+    selected_option_id: number | null;
+    is_correct: boolean;
+    is_flagged: boolean;
+    question?: Question;
+    selected_option?: QuestionOption | null;
+}
+
 export interface CandidateExamSession {
     id: number;
     candidate_id: number;
@@ -75,6 +86,7 @@ export interface CandidateExamSession {
     question_order?: number[];
     score?: number;
     passed?: boolean;
+    answers?: CandidateAnswer[];
 }
 
 export interface DeviceSession {

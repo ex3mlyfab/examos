@@ -64,7 +64,7 @@ export default function CombinedRoom({
     const [questionsPerPage, setQuestionsPerPage] = useState<number>(1);
 
     const isCriticalTime = timeLeft <= 300;
-    const timerRef = useRef<NodeJS.Timeout>();
+    const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
     const endTimeRef = useRef<number>(0);
 
     // Get current subject data item
@@ -293,7 +293,10 @@ export default function CombinedRoom({
                 ?.getAttribute('content') || '';
 
         const sessionId = getSessionIdForQuestion(questionId);
-        if (!sessionId) return;
+        if (!sessionId) {
+            console.warn('[CombinedRoom] Could not find session for question', questionId);
+            return;
+        }
 
         fetch(`/candidate/answer/${sessionId}`, {
             method: 'POST',
@@ -307,12 +310,26 @@ export default function CombinedRoom({
                 option_id: optionId,
                 is_flagged: isFlagged,
             }),
-        }).catch((err) => {
-            console.error('Failed to save answer', err);
-            toast.error(
-                'Network error: Failed to save your last answer. Please check your connection.',
-            );
-        });
+        })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    console.error(
+                        `[CombinedRoom] Answer save failed: HTTP ${res.status}`,
+                        body,
+                    );
+                    if (res.status !== 422) {
+                        // Only show toast for non-validation errors
+                        toast.error('Could not save answer. Please check your connection.');
+                    }
+                }
+            })
+            .catch((err) => {
+                console.error('[CombinedRoom] Network error saving answer', err);
+                toast.error(
+                    'Network error: Failed to save your last answer. Please check your connection.',
+                );
+            });
     }
 
     const formatTime = (seconds: number) => {

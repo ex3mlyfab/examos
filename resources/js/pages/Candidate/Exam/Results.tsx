@@ -1,15 +1,70 @@
 import { Head, Link } from '@inertiajs/react';
-import { CheckCircle, XCircle, ChevronLeft, Award } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronLeft, Award, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { CandidateExamSession } from '@/types/exam';
+import CombinedResults from './CombinedResults';
 
 interface PageProps {
-    sessions: (CandidateExamSession & { subject: any })[];
-    [key: string]: any;
+    sessions: any[];
+    season: any;
+    allowReview: boolean;
+    isCombined: boolean;
 }
 
-export default function Results({ sessions }: PageProps) {
+export default function Results({ sessions, season, allowReview, isCombined }: PageProps) {
+    if (!allowReview) {
+        return (
+            <div className="min-h-screen bg-muted/20 px-4 py-12 font-sans sm:px-6">
+                <Head title="Submission Confirmed" />
+
+                <div className="mx-auto max-w-md space-y-6 text-center">
+                    <Card className="border-0 shadow-lg ring-1 ring-primary/10">
+                        <CardContent className="flex flex-col items-center justify-center p-8 md:p-10 space-y-6">
+                            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                                <CheckCircle2 className="h-10 w-10" />
+                            </div>
+
+                            <div className="space-y-2">
+                                <h1 className="text-2xl font-black tracking-tight text-foreground">
+                                    Exam Submitted Successfully
+                                </h1>
+                                <p className="text-sm text-muted-foreground">
+                                    Thank you! Your responses have been recorded.
+                                </p>
+                            </div>
+
+                            <div className="w-full bg-muted/40 rounded-lg p-4 border text-left text-sm space-y-2 text-muted-foreground">
+                                <p><strong>Examination:</strong> {season?.name}</p>
+                                <p><strong>Status:</strong> Completed</p>
+                                {isCombined ? (
+                                    <p><strong>Subjects Submitted:</strong> {sessions.length}</p>
+                                ) : (
+                                    <p><strong>Subject Submitted:</strong> {sessions[0]?.subject?.name}</p>
+                                )}
+                            </div>
+
+                            <div className="w-full border-t border-dashed pt-4 flex gap-3 text-amber-800 bg-amber-50/50 p-4 rounded-lg text-xs leading-relaxed text-left border-amber-100">
+                                <div className="mt-0.5 font-bold uppercase shrink-0">Note:</div>
+                                <div>Results and scorecards are not yet released for review. Please check back later.</div>
+                            </div>
+
+                            <Link href="/candidate/profile" className="w-full">
+                                <Button className="w-full shadow-md">
+                                    Go to Dashboard
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
+
+    if (isCombined) {
+        return <CombinedResults season={season} sessions={sessions} />;
+    }
+
     return (
         <div className="min-h-screen bg-muted/20 px-4 py-8 font-sans sm:px-6">
             <Head title="My Results" />

@@ -6,6 +6,7 @@ import {
     Flag,
     Send,
     Settings2,
+    BookOpen,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -59,7 +60,7 @@ export default function ExamRoom({
 
     const totalPages = Math.ceil((questions?.length || 0) / questionsPerPage);
 
-    const timerRef = useRef<NodeJS.Timeout>();
+    const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
     // Initialize answers state from DB
     useEffect(() => {
