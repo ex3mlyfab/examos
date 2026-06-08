@@ -29,6 +29,10 @@ class ExamController extends Controller
     public function instructions(Subject $subject)
     {
         $candidate = auth('candidate')->user();
+        if ($candidate->examSeason && $candidate->examSeason->isCombinedMode()) {
+            return redirect()->route('candidate.combined-instructions');
+        }
+
         if (! $candidate->subjects->contains($subject->id)) {
             abort(403, 'You are not allocated to this subject.');
         }
@@ -53,6 +57,10 @@ class ExamController extends Controller
     public function start(Subject $subject, ExamSessionService $examService)
     {
         $candidate = auth('candidate')->user();
+        if ($candidate->examSeason && $candidate->examSeason->isCombinedMode()) {
+            return redirect()->route('candidate.combined-instructions');
+        }
+
         if (! $candidate->subjects->contains($subject->id)) {
             abort(403);
         }
@@ -68,6 +76,10 @@ class ExamController extends Controller
     public function room(Subject $subject, ExamSessionService $examService)
     {
         $candidate = auth('candidate')->user();
+        if ($candidate->examSeason && $candidate->examSeason->isCombinedMode()) {
+            return redirect()->route('candidate.combined-room');
+        }
+
         $session = CandidateExamSession::where('candidate_id', $candidate->id)
             ->where('subject_id', $subject->id)
             ->firstOrFail();
@@ -174,5 +186,145 @@ class ExamController extends Controller
         return Inertia::render('Candidate/Exam/ShowResult', [
             'session' => $session,
         ]);
+    }
+
+    /**
+     * Show combined exam instructions.
+     */
+    public function combinedInstructions()
+    {
+        $candidate = auth('candidate')->user()->load(['examSeason', 'subjects']);
+        if (! $candidate->examSeason || ! $candidate->examSeason->isCombinedMode()) {
+            abort(403, 'This action is only available for combined examinations.');
+        }
+
+        return Inertia::render('Candidate/Exam/CombinedInstructions', [
+            'candidate' => $candidate,
+            'subjects' => $candidate->subjects,
+            'season' => $candidate->examSeason,
+        ]);
+    }
+
+    /**
+     * Start the combined exam and redirect to combined room.
+     */
+    public function startCombined(ExamSessionService $examService)
+    {
+        $candidate = auth('candidate')->user()->load(['examSeason', 'subjects']);
+        if (! $candidate->examSeason || ! $candidate->examSeason->isCombinedMode()) {
+            abort(403);
+        }
+
+        $season = $candidate->examSeason;
+        $totalDuration = $season->combo_settings['total_duration_minutes'] ?? 60;
+        $expiresAt = now()->addMinutes($totalDuration);
+
+        foreach ($candidate->subjects as $subject) {
+            $session = CandidateExamSession::firstOrCreate(
+                ['candidate_id' => $candidate->id, 'subject_id' => $subject->id],
+                [
+                    'exam_season_id' => $season->id,
+                    'status' => 'pending',
+                ]
+            );
+
+            if ($session->status === 'pending') {
+                $session->status = 'active';
+                $session->started_at = now();
+                $session->expires_at = $expiresAt;
+                $session->question_order = $examService->randomiseQuestions($subject);
+                $session->save();
+            }
+        }
+
+        return redirect()->route('candidate.combined-room');
+    }
+
+    /**
+     * Show the combined exam room.
+     */
+    public function combinedRoom(ExamSessionService $examService)
+    {
+        $candidate = auth('candidate')->user()->load(['examSeason', 'subjects']);
+        if (! $candidate->examSeason || ! $candidate->examSeason->isCombinedMode()) {
+            abort(403);
+        }
+
+        // Get sessions
+        $sessions = CandidateExamSession::where('candidate_id', $candidate->id)
+            ->whereIn('subject_id', $candidate->subjects->pluck('id'))
+            ->with('answers')
+            ->get();
+
+        // Check if all are completed
+        $allCompleted = $sessions->every(function ($s) {
+            return $s->status === 'completed';
+        });
+
+        if ($allCompleted) {
+            return redirect()->route('candidate.results');
+        }
+
+        $subjectData = [];
+        $remainingSeconds = 0;
+
+        foreach ($candidate->subjects as $subject) {
+            $session = $sessions->firstWhere('subject_id', $subject->id);
+            if (! $session) {
+                return redirect()->route('candidate.profile');
+            }
+
+            // Sync remaining seconds from the first active session
+            if ($session->status === 'active' && $remainingSeconds === 0) {
+                $remainingSeconds = $examService->getRemainingSeconds($session);
+            }
+
+            $orderedIds = $session->question_order ?? [];
+            $questions = [];
+
+            if (! empty($orderedIds)) {
+                $idsString = implode(',', $orderedIds);
+                $questions = $subject->questions()
+                    ->whereIn('id', $orderedIds)
+                    ->with(['options' => function ($q) {
+                        $q->select('id', 'question_id', 'option_label', 'option_text');
+                    }])
+                    ->orderByRaw("FIELD(id, {$idsString})")
+                    ->get();
+            }
+
+            $subjectData[] = [
+                'subject' => $subject,
+                'session' => $session,
+                'questions' => $questions,
+            ];
+        }
+
+        return Inertia::render('Candidate/Exam/CombinedRoom', [
+            'season' => $candidate->examSeason,
+            'subjectData' => $subjectData,
+            'remainingSeconds' => $remainingSeconds,
+        ]);
+    }
+
+    /**
+     * Submit all sessions of the combined exam.
+     */
+    public function submitCombined(ExamSessionService $examService)
+    {
+        $candidate = auth('candidate')->user()->load(['examSeason', 'subjects']);
+        if (! $candidate->examSeason || ! $candidate->examSeason->isCombinedMode()) {
+            abort(403);
+        }
+
+        $sessions = CandidateExamSession::where('candidate_id', $candidate->id)
+            ->whereIn('subject_id', $candidate->subjects->pluck('id'))
+            ->get();
+
+        foreach ($sessions as $session) {
+            $examService->submit($session);
+        }
+
+        return redirect()->route('candidate.results');
     }
 }

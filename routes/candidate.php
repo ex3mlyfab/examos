@@ -32,6 +32,10 @@ Route::prefix('candidate')->name('candidate.')->group(function () {
     Route::middleware(['auth:candidate', 'exam.device'])->group(function () {
         Route::get('/profile', [ExamController::class, 'profile'])->name('profile');
         Route::get('/instructions/{subject}', [ExamController::class, 'instructions'])->name('instructions');
+        Route::get('/combined-instructions', [ExamController::class, 'combinedInstructions'])->name('combined-instructions');
+        Route::post('/start-combined', [ExamController::class, 'startCombined'])->name('start-combined');
+        Route::get('/combined-room', [ExamController::class, 'combinedRoom'])->name('combined-room');
+        Route::post('/submit-combined', [ExamController::class, 'submitCombined'])->name('submit-combined');
         Route::get('/results', [ExamController::class, 'results'])->name('results');
         Route::get('/results/{session}', [ExamController::class, 'showResult'])->name('results.show');
 

@@ -35,7 +35,7 @@ class ExamSessionService
     /**
      * Randomise questions based on subject settings.
      */
-    protected function randomiseQuestions(Subject $subject): array
+    public function randomiseQuestions(Subject $subject): array
     {
         // Get active questions
         $questions = $subject->questions()->where('is_active', true)->pluck('id')->toArray();

@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { useEffect, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -46,6 +46,18 @@ export default function Create({ seasons }: PageProps) {
         (s) => s.id.toString() === data.exam_season_id,
     );
     const isCombinedMode = selectedSeason?.exam_mode === 'combined';
+
+    useEffect(() => {
+        if (isCombinedMode) {
+            if (data.allocation_type === 'all') {
+                setData('allocation_type', 'base_combo');
+            }
+        } else {
+            if (data.allocation_type === 'base_combo') {
+                setData('allocation_type', 'all');
+            }
+        }
+    }, [isCombinedMode, data.allocation_type, setData]);
 
     const submit = (e: FormEvent) => {
         e.preventDefault();

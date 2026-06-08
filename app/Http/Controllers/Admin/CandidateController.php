@@ -100,7 +100,9 @@ class CandidateController extends Controller
         $validated['raw_password'] = $rawPassword;
         $validated['password'] = Hash::make($rawPassword);
 
-        Candidate::create($validated);
+        $candidate = Candidate::create($validated);
+
+        app(\App\Services\SubjectAllocationService::class)->allocateBySubject($candidate);
 
         return redirect()->route('admin.candidates.index')->with('success', 'Candidate created successfully.');
     }
@@ -149,6 +151,8 @@ class CandidateController extends Controller
         ]);
 
         $candidate->update($validated);
+
+        app(\App\Services\SubjectAllocationService::class)->allocateBySubject($candidate);
 
         return redirect()->route('admin.candidates.index')->with('success', 'Candidate updated successfully.');
     }

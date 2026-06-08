@@ -29,6 +29,8 @@ class SubjectAllocationService
                 $criteria = $subject->allocation_criteria;
 
                 if (empty($criteria)) {
+                    $allocatedIds[] = $subject->id;
+
                     continue;
                 }
 
@@ -75,5 +77,16 @@ class SubjectAllocationService
         }
 
         $candidate->subjects()->sync($allocatedIds);
+    }
+
+    /**
+     * Allocate subjects to all candidates in a given exam season.
+     */
+    public function allocateForSeason(\App\Models\ExamSeason $season): void
+    {
+        $candidates = $season->candidates()->get();
+        foreach ($candidates as $candidate) {
+            $this->allocateBySubject($candidate);
+        }
     }
 }

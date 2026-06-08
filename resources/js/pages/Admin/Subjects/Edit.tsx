@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { useEffect, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -34,6 +34,7 @@ interface Subject {
     pass_mark: number;
     instructions: string | null;
     is_active: boolean;
+    allocation_criteria?: any;
 }
 
 interface PageProps {
@@ -42,6 +43,43 @@ interface PageProps {
 }
 
 export default function Edit({ subject, seasons }: PageProps) {
+    // Parse initial allocation criteria
+    let initialAllocationType = 'all';
+    let initialDepartmentName = '';
+
+    const selectedSeasonOnLoad = seasons.find(
+        (s) => s.id.toString() === (subject.exam_season_id?.toString() || ''),
+    );
+    const isCombinedOnLoad = selectedSeasonOnLoad?.exam_mode === 'combined';
+
+    if (isCombinedOnLoad) {
+        initialAllocationType = 'base_combo';
+    }
+
+    if (subject.allocation_criteria) {
+        try {
+            const criteria = typeof subject.allocation_criteria === 'string'
+                ? JSON.parse(subject.allocation_criteria)
+                : subject.allocation_criteria;
+
+            if (criteria.is_base_combo_subject) {
+                initialAllocationType = 'base_combo';
+            } else if (criteria.department_specific) {
+                initialAllocationType = 'department';
+                if (Array.isArray(criteria.departments) && criteria.departments.length > 0) {
+                    initialDepartmentName = criteria.departments[0];
+                } else if (typeof criteria.departments === 'string') {
+                    initialDepartmentName = criteria.departments;
+                }
+            } else if (criteria.department) {
+                initialAllocationType = 'department';
+                initialDepartmentName = criteria.department;
+            }
+        } catch (e) {
+            console.error('Failed to parse allocation criteria', e);
+        }
+    }
+
     const { data, setData, put, processing, errors } = useForm({
         exam_season_id: subject.exam_season_id
             ? subject.exam_season_id.toString()
@@ -53,11 +91,58 @@ export default function Edit({ subject, seasons }: PageProps) {
         pass_mark: subject.pass_mark || 50,
         instructions: subject.instructions || '',
         is_active: subject.is_active,
+        allocation_criteria: subject.allocation_criteria || null,
+        allocation_type: initialAllocationType,
+        department_name: initialDepartmentName,
     });
+
+    const selectedSeason = seasons.find(
+        (s) => s.id.toString() === data.exam_season_id,
+    );
+    const isCombinedMode = selectedSeason?.exam_mode === 'combined';
+
+    useEffect(() => {
+        if (isCombinedMode) {
+            if (data.allocation_type === 'all') {
+                setData('allocation_type', 'base_combo');
+            }
+        } else {
+            if (data.allocation_type === 'base_combo') {
+                setData('allocation_type', 'all');
+            }
+        }
+    }, [isCombinedMode, data.allocation_type, setData]);
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/admin/subjects/${subject.id}`);
+
+        let criteria: any = null;
+
+        if (isCombinedMode) {
+            if (data.allocation_type === 'base_combo') {
+                criteria = { is_base_combo_subject: true };
+            } else if (
+                data.allocation_type === 'department' &&
+                data.department_name
+            ) {
+                criteria = {
+                    department_specific: true,
+                    departments: [data.department_name],
+                };
+            }
+        } else if (
+            data.allocation_type === 'department' &&
+            data.department_name
+        ) {
+            criteria = { department: data.department_name };
+        }
+
+        put(`/admin/subjects/${subject.id}`, {
+            data: {
+                ...data,
+                allocation_criteria: criteria ? JSON.stringify(criteria) : null,
+            },
+        } as any);
     };
 
     return (
@@ -262,6 +347,68 @@ export default function Edit({ subject, seasons }: PageProps) {
                                     <p className="text-sm font-medium text-destructive">
                                         {errors.instructions}
                                     </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-4 rounded-lg border bg-muted/10 p-4">
+                                <div className="space-y-2">
+                                    <Label>Subject Audience & Allocation</Label>
+                                    <p className="mb-4 text-sm text-muted-foreground">
+                                        {isCombinedMode
+                                            ? 'This season uses Combined Mode. Decide if this subject is a Base subject for everyone, or specific to a department.'
+                                            : "Define who takes this subject. Leave as 'All Candidates' if everyone takes it."}
+                                    </p>
+
+                                    <Select
+                                        value={data.allocation_type}
+                                        onValueChange={(val) =>
+                                            setData('allocation_type', val)
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Allocation Type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {!isCombinedMode && (
+                                                <SelectItem value="all">
+                                                    All Candidates
+                                                </SelectItem>
+                                            )}
+                                            {isCombinedMode && (
+                                                <SelectItem value="base_combo">
+                                                    Base Subject (All Candidates in Combo)
+                                                </SelectItem>
+                                            )}
+                                            <SelectItem value="department">
+                                                Department Specific
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {data.allocation_type === 'department' && (
+                                    <div className="space-y-2 border-t pt-2">
+                                        <Label htmlFor="department_name">
+                                            Department Name{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </Label>
+                                        <Input
+                                            id="department_name"
+                                            placeholder="e.g. Physics"
+                                            value={data.department_name}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'department_name',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                        <p className="text-sm text-muted-foreground">
+                                            Only candidates from this department will be allocated this subject.
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 

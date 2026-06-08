@@ -20,7 +20,7 @@ import type { Candidate, Subject, CandidateExamSession } from '@/types/exam';
 
 interface PageProps {
     candidate: Candidate & {
-        examSeason: any;
+        exam_season: any;
         subjects: Subject[];
         sessions: CandidateExamSession[];
     };
@@ -34,6 +34,9 @@ export default function Profile() {
     const getSessionForSubject = (subjectId: number) => {
         return candidate.sessions?.find((s) => s.subject_id === subjectId);
     };
+
+    const isCombinedCompleted = candidate.subjects?.length > 0 && candidate.subjects?.every((sub) => getSessionForSubject(sub.id)?.status === 'completed');
+    const isCombinedActive = candidate.subjects?.some((sub) => getSessionForSubject(sub.id)?.status === 'active');
 
     return (
         <div className="min-h-screen bg-muted/20 pb-12 font-sans">
@@ -70,7 +73,7 @@ export default function Profile() {
                             Welcome, {candidate.name}
                         </h1>
                         <p className="max-w-xl text-lg text-primary-foreground/80">
-                            {candidate.examSeason?.name ||
+                            {candidate.exam_season?.name ||
                                 'Upcoming Examination Season'}
                         </p>
                     </div>
@@ -134,11 +137,11 @@ export default function Profile() {
                                     </p>
                                 </CardContent>
                             </Card>
-                        ) : candidate.examSeason?.exam_mode === 'combined' ? (
+                        ) : candidate.exam_season?.exam_mode === 'combined' ? (
                             <Card className="flex flex-col border-0 shadow-md ring-1 ring-border/50">
                                 <CardHeader className="border-b bg-muted/10 pb-3">
                                     <CardTitle className="text-xl leading-tight">
-                                        Combined Subject Examination
+                                        {candidate.exam_season?.name || 'Combined Subject Examination'}
                                     </CardTitle>
                                     <CardDescription>
                                         You will take the following subjects in
@@ -151,7 +154,7 @@ export default function Profile() {
                                             <Clock className="h-5 w-5" />
                                             <span>
                                                 Total Time:{' '}
-                                                {candidate.examSeason
+                                                {candidate.exam_season
                                                     ?.combo_settings
                                                     ?.total_duration_minutes ||
                                                     'N/A'}{' '}
@@ -182,17 +185,39 @@ export default function Profile() {
                                     </div>
                                 </CardContent>
                                 <CardFooter className="border-t bg-muted/5 pt-4">
-                                    <Link
-                                        href="/candidate/combined-instructions"
-                                        className="w-full"
-                                    >
+                                    {isCombinedCompleted ? (
                                         <Button
+                                            variant="secondary"
+                                            className="pointer-events-none w-full bg-green-100 text-green-800 hover:bg-green-200"
                                             size="lg"
-                                            className="w-full text-lg shadow-md"
                                         >
-                                            Start Combined Exam
+                                            Completed
                                         </Button>
-                                    </Link>
+                                    ) : isCombinedActive ? (
+                                        <Link
+                                            href="/candidate/combined-room"
+                                            className="w-full"
+                                        >
+                                            <Button
+                                                size="lg"
+                                                className="w-full text-lg shadow-md bg-orange-500 text-white hover:bg-orange-600"
+                                            >
+                                                Resume Combined Exam
+                                            </Button>
+                                        </Link>
+                                    ) : (
+                                        <Link
+                                            href="/candidate/combined-instructions"
+                                            className="w-full"
+                                        >
+                                            <Button
+                                                size="lg"
+                                                className="w-full text-lg shadow-md"
+                                            >
+                                                Start Combined Exam
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </CardFooter>
                             </Card>
                         ) : (

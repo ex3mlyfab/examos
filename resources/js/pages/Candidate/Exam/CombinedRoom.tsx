@@ -6,6 +6,7 @@ import {
     Flag,
     Send,
     Settings2,
+    BookOpen,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
@@ -32,58 +33,73 @@ import type {
     CandidateExamSession,
     Question,
     CandidateAnswer,
+    ExamSeason,
 } from '@/types/exam';
 
-interface PageProps {
+interface SubjectDataItem {
     subject: Subject;
     session: CandidateExamSession & { answers: CandidateAnswer[] };
     questions: Question[];
-    remainingSeconds: number;
-    [key: string]: any;
 }
 
-export default function ExamRoom({
-    subject,
-    session,
-    questions,
+interface PageProps {
+    season: ExamSeason;
+    subjectData: SubjectDataItem[];
+    remainingSeconds: number;
+}
+
+export default function CombinedRoom({
+    season,
+    subjectData,
     remainingSeconds: initialRemaining,
 }: PageProps) {
     const [timeLeft, setTimeLeft] = useState(initialRemaining);
-    const [currentPage, setCurrentPage] = useState(0);
+    const [activeSubjectId, setActiveSubjectId] = useState<number>(
+        subjectData[0]?.subject.id || 0,
+    );
+    const [currentPages, setCurrentPages] = useState<Record<number, number>>({});
     const [answers, setAnswers] = useState<Record<number, number | null>>({});
     const [flagged, setFlagged] = useState<Record<number, boolean>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [questionsPerPage, setQuestionsPerPage] = useState<number>(1);
 
     const isCriticalTime = timeLeft <= 300;
-
-    const totalPages = Math.ceil((questions?.length || 0) / questionsPerPage);
-
     const timerRef = useRef<NodeJS.Timeout>();
-
-    // Initialize answers state from DB
-    useEffect(() => {
-        if (session.answers) {
-            const initialAnswers: Record<number, number | null> = {};
-            const initialFlagged: Record<number, boolean> = {};
-
-            session.answers.forEach((ans) => {
-                if (ans.selected_option_id) {
-                    initialAnswers[ans.question_id] = ans.selected_option_id;
-                }
-
-                if (ans.is_flagged) {
-                    initialFlagged[ans.question_id] = ans.is_flagged;
-                }
-            });
-
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setAnswers(initialAnswers);
-            setFlagged(initialFlagged);
-        }
-    }, [session.answers]);
-
     const endTimeRef = useRef<number>(0);
+
+    // Get current subject data item
+    const activeItem = subjectData.find((sd) => sd.subject.id === activeSubjectId) || subjectData[0];
+    const activeQuestions = activeItem?.questions || [];
+    const activeSubjectPage = currentPages[activeSubjectId] || 0;
+    const totalPages = Math.ceil((activeQuestions.length || 0) / questionsPerPage);
+
+    // Helper to get session ID for a question ID
+    const getSessionIdForQuestion = (questionId: number) => {
+        const item = subjectData.find((sd) => sd.questions.some((q) => q.id === questionId));
+        return item ? item.session.id : null;
+    };
+
+    // Initialize answers state from DB across all subjects
+    useEffect(() => {
+        const initialAnswers: Record<number, number | null> = {};
+        const initialFlagged: Record<number, boolean> = {};
+
+        subjectData.forEach((sd) => {
+            if (sd.session.answers) {
+                sd.session.answers.forEach((ans) => {
+                    if (ans.selected_option_id) {
+                        initialAnswers[ans.question_id] = ans.selected_option_id;
+                    }
+                    if (ans.is_flagged) {
+                        initialFlagged[ans.question_id] = ans.is_flagged;
+                    }
+                });
+            }
+        });
+
+        setAnswers(initialAnswers);
+        setFlagged(initialFlagged);
+    }, [subjectData]);
 
     // Timer logic
     useEffect(() => {
@@ -108,9 +124,11 @@ export default function ExamRoom({
             }
         }, 1000);
 
-        // Sync with server every 2 minutes
+        // Sync with server every 2 minutes using the first session ID
+        const firstSessionId = subjectData[0]?.session.id;
         const syncInterval = setInterval(() => {
-            fetch(`/candidate/sync-time/${session.id}`)
+            if (!firstSessionId) return;
+            fetch(`/candidate/sync-time/${firstSessionId}`)
                 .then((res) => res.json())
                 .then((data) => {
                     if (data.remainingSeconds !== undefined) {
@@ -118,14 +136,8 @@ export default function ExamRoom({
                             (endTimeRef.current - Date.now()) / 1000,
                         );
 
-                        // Only correct if we are drifting significantly (e.g. > 5 seconds)
-                        if (
-                            Math.abs(
-                                data.remainingSeconds - currentLocalRemaining,
-                            ) > 5
-                        ) {
-                            endTimeRef.current =
-                                Date.now() + data.remainingSeconds * 1000;
+                        if (Math.abs(data.remainingSeconds - currentLocalRemaining) > 5) {
+                            endTimeRef.current = Date.now() + data.remainingSeconds * 1000;
                             setTimeLeft(data.remainingSeconds);
                         }
                     }
@@ -137,16 +149,17 @@ export default function ExamRoom({
             clearInterval(timerRef.current);
             clearInterval(syncInterval);
         };
-    }, [isSubmitting, session.id]);
+    }, [isSubmitting, subjectData]);
 
     // WebSocket listener for admin release
     useEffect(() => {
-        if (!window.Echo || !session.candidate_id) {
+        const firstSession = subjectData[0]?.session;
+        if (!window.Echo || !firstSession?.candidate_id) {
             return;
         }
 
         const channel = window.Echo.private(
-            `candidate.${session.candidate_id}`,
+            `candidate.${firstSession.candidate_id}`,
         );
 
         channel.listen('AdminReleasedDevice', () => {
@@ -156,18 +169,17 @@ export default function ExamRoom({
                     duration: Infinity,
                 },
             );
-            // Force reload which will hit device lock middleware or just log them out
             setTimeout(() => {
                 window.location.href = '/candidate/login';
             }, 3000);
         });
 
         return () => {
-            window.Echo.leave(`candidate.${session.candidate_id}`);
+            window.Echo.leave(`candidate.${firstSession.candidate_id}`);
         };
-    }, [session.candidate_id]);
+    }, [subjectData]);
 
-    // Keyboard navigation and shortcuts
+    // Keyboard navigation and shortcuts for the active subject
     useEffect(() => {
         if (questionsPerPage !== 1 || isSubmitting) {
             return;
@@ -183,15 +195,21 @@ export default function ExamRoom({
 
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
-                setCurrentPage((p) => Math.max(0, p - 1));
+                setCurrentPages((prev) => ({
+                    ...prev,
+                    [activeSubjectId]: Math.max(0, (prev[activeSubjectId] || 0) - 1),
+                }));
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                setCurrentPage((p) => Math.min(totalPages - 1, p + 1));
+                setCurrentPages((prev) => ({
+                    ...prev,
+                    [activeSubjectId]: Math.min(totalPages - 1, (prev[activeSubjectId] || 0) + 1),
+                }));
             } else {
                 const key = e.key.toUpperCase();
 
                 if (['A', 'B', 'C', 'D'].includes(key)) {
-                    const q = questions ? questions[currentPage] : null;
+                    const q = activeQuestions ? activeQuestions[activeSubjectPage] : null;
 
                     if (q && q.options) {
                         const optIndex = ['A', 'B', 'C', 'D'].indexOf(key);
@@ -213,9 +231,10 @@ export default function ExamRoom({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [
         questionsPerPage,
-        currentPage,
+        activeSubjectId,
+        activeSubjectPage,
         totalPages,
-        questions,
+        activeQuestions,
         isSubmitting,
         flagged,
     ]);
@@ -231,7 +250,7 @@ export default function ExamRoom({
     function submitExam() {
         setIsSubmitting(true);
         router.post(
-            `/candidate/submit/${session.id}`,
+            `/candidate/submit-combined`,
             {},
             {
                 replace: true,
@@ -268,13 +287,15 @@ export default function ExamRoom({
         optionId: number | null,
         isFlagged: boolean = false,
     ) {
-        // CSRF Token is included automatically by Axios, but we'll use fetch here with meta tag extraction
         const token =
             document.head
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute('content') || '';
 
-        fetch(`/candidate/answer/${session.id}`, {
+        const sessionId = getSessionIdForQuestion(questionId);
+        if (!sessionId) return;
+
+        fetch(`/candidate/answer/${sessionId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -308,10 +329,13 @@ export default function ExamRoom({
 
     const handleQuestionsPerPageChange = (value: string) => {
         setQuestionsPerPage(parseInt(value));
-        setCurrentPage(0);
+        setCurrentPages((prev) => ({
+            ...prev,
+            [activeSubjectId]: 0,
+        }));
     };
 
-    if (!questions || questions.length === 0) {
+    if (!activeQuestions || activeQuestions.length === 0) {
         return (
             <div className="p-8 text-center">
                 No questions available for this subject.
@@ -319,19 +343,21 @@ export default function ExamRoom({
         );
     }
 
-    const currentQuestions = questions.slice(
-        currentPage * questionsPerPage,
-        (currentPage + 1) * questionsPerPage,
+    const currentQuestions = activeQuestions.slice(
+        activeSubjectPage * questionsPerPage,
+        (activeSubjectPage + 1) * questionsPerPage,
     );
-    const progressPercentage = ((currentPage + 1) / totalPages) * 100;
+    const progressPercentage = ((activeSubjectPage + 1) / totalPages) * 100;
 
-    const answeredCount = Object.keys(answers).filter(
-        (k) => answers[parseInt(k)] !== null,
+    // Count answers for active subject
+    const activeSubjectQuestionsCount = activeQuestions.length;
+    const activeSubjectAnswersCount = activeQuestions.filter(
+        (q) => answers[q.id] !== undefined && answers[q.id] !== null,
     ).length;
 
     return (
         <div className="min-h-screen bg-muted/20 pb-20 font-sans">
-            <Head title={`Exam Room - ${subject.name}`} />
+            <Head title={`Exam Room - ${season.name}`} />
 
             {/* Sticky Top Header with Timer */}
             <header className="sticky top-0 z-50 w-full border-b bg-background/80 px-4 py-3 shadow-sm backdrop-blur-md transition-all duration-300 md:px-8">
@@ -342,10 +368,10 @@ export default function ExamRoom({
                         </div>
                         <div>
                             <h1 className="text-sm leading-tight font-bold md:text-base">
-                                {subject.name}
+                                {season.name}
                             </h1>
                             <p className="text-xs text-muted-foreground">
-                                {subject.code}
+                                Combined Examination
                             </p>
                         </div>
                     </div>
@@ -389,18 +415,41 @@ export default function ExamRoom({
                         </div>
                     </div>
                 </div>
-                <Progress
-                    value={progressPercentage}
-                    className="h-1 rounded-none bg-muted/50"
-                />
             </header>
+
+            {/* Subject Tabs */}
+            <div className="border-b bg-background px-4 md:px-8 py-1.5 shadow-sm">
+                <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto">
+                    {subjectData.map(({ subject }) => {
+                        const isActive = activeSubjectId === subject.id;
+                        return (
+                            <button
+                                key={subject.id}
+                                onClick={() => setActiveSubjectId(subject.id)}
+                                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${
+                                    isActive
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                            >
+                                {subject.name}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <Progress
+                value={progressPercentage}
+                className="h-1 rounded-none bg-muted/50"
+            />
 
             <main className="container mx-auto grid max-w-6xl flex-1 gap-6 px-4 py-6 md:grid-cols-12 md:py-8">
                 {/* Left Column: Questions */}
                 <div className="space-y-6 md:col-span-8 lg:col-span-9">
                     {currentQuestions.map((q, idx) => {
                         const globalIndex =
-                            currentPage * questionsPerPage + idx + 1;
+                            activeSubjectPage * questionsPerPage + idx + 1;
                         const isFlagged = flagged[q.id];
 
                         return (
@@ -488,39 +537,45 @@ export default function ExamRoom({
                         <Button
                             variant="outline"
                             onClick={() =>
-                                setCurrentPage((p) => Math.max(0, p - 1))
+                                setCurrentPages((prev) => ({
+                                    ...prev,
+                                    [activeSubjectId]: Math.max(0, (prev[activeSubjectId] || 0) - 1),
+                                }))
                             }
-                            disabled={currentPage === 0 || isSubmitting}
+                            disabled={activeSubjectPage === 0 || isSubmitting}
                         >
                             <ChevronLeft className="mr-2 h-4 w-4" /> Previous
                         </Button>
 
                         <div className="text-sm font-medium text-muted-foreground">
-                            Page {currentPage + 1} of {totalPages}
+                            Page {activeSubjectPage + 1} of {totalPages}
                         </div>
 
-                        {currentPage === totalPages - 1 ? (
-                            <Button
-                                onClick={() => {
-                                    if (
-                                        confirm(
-                                            'Are you sure you want to submit your exam? This action cannot be undone.',
-                                        )
-                                    ) {
-                                        submitExam();
-                                    }
-                                }}
-                                disabled={isSubmitting}
-                                className="bg-green-600 text-white hover:bg-green-700"
-                            >
-                                Submit Exam <Send className="ml-2 h-4 w-4" />
-                            </Button>
+                        {activeSubjectPage === totalPages - 1 ? (
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={() => {
+                                        if (
+                                            confirm(
+                                                'Are you sure you want to submit your entire exam? This action cannot be undone.',
+                                            )
+                                        ) {
+                                            submitExam();
+                                        }
+                                    }}
+                                    disabled={isSubmitting}
+                                    className="bg-green-600 text-white hover:bg-green-700"
+                                >
+                                    Submit Combined Exam <Send className="ml-2 h-4 w-4" />
+                                </Button>
+                            </div>
                         ) : (
                             <Button
                                 onClick={() =>
-                                    setCurrentPage((p) =>
-                                        Math.min(totalPages - 1, p + 1),
-                                    )
+                                    setCurrentPages((prev) => ({
+                                        ...prev,
+                                        [activeSubjectId]: Math.min(totalPages - 1, (prev[activeSubjectId] || 0) + 1),
+                                    }))
                                 }
                                 disabled={isSubmitting}
                             >
@@ -540,7 +595,7 @@ export default function ExamRoom({
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="mb-6 flex flex-wrap gap-2">
-                                {questions.map((q, idx) => {
+                                {activeQuestions.map((q, idx) => {
                                     const pageNum = Math.floor(
                                         idx / questionsPerPage,
                                     );
@@ -549,7 +604,7 @@ export default function ExamRoom({
                                         answers[q.id] !== null;
                                     const isFlagged = flagged[q.id];
                                     const isCurrentPage =
-                                        pageNum === currentPage;
+                                        pageNum === activeSubjectPage;
 
                                     let btnClass =
                                         'h-8 w-8 text-xs p-0 border shadow-sm transition-all ';
@@ -580,7 +635,10 @@ export default function ExamRoom({
                                             variant="outline"
                                             className={btnClass}
                                             onClick={() =>
-                                                setCurrentPage(pageNum)
+                                                setCurrentPages((prev) => ({
+                                                    ...prev,
+                                                    [activeSubjectId]: pageNum,
+                                                }))
                                             }
                                         >
                                             {idx + 1}
@@ -592,29 +650,29 @@ export default function ExamRoom({
                             <div className="space-y-2 border-t border-dashed pt-4 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                        Answered:
+                                        Subject Answered:
                                     </span>
                                     <span className="font-medium text-primary">
-                                        {answeredCount} / {questions.length}
+                                        {activeSubjectAnswersCount} / {activeSubjectQuestionsCount}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                        Unanswered:
+                                        Subject Unanswered:
                                     </span>
                                     <span className="font-medium">
-                                        {questions.length - answeredCount}
+                                        {activeSubjectQuestionsCount - activeSubjectAnswersCount}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="flex items-center gap-1 text-muted-foreground">
                                         <Flag className="h-3 w-3 fill-amber-500 text-amber-500" />{' '}
-                                        Flagged:
+                                        Subject Flagged:
                                     </span>
                                     <span className="font-medium text-amber-600">
                                         {
-                                            Object.values(flagged).filter(
-                                                Boolean,
+                                            activeQuestions.filter(
+                                                (q) => flagged[q.id]
                                             ).length
                                         }
                                     </span>
@@ -628,7 +686,7 @@ export default function ExamRoom({
                                 onClick={() => {
                                     if (
                                         confirm(
-                                            'Are you sure you want to finish and submit the exam early?',
+                                            'Are you sure you want to finish and submit the entire combined exam early?',
                                         )
                                     ) {
                                         submitExam();
@@ -636,7 +694,7 @@ export default function ExamRoom({
                                 }}
                                 disabled={isSubmitting}
                             >
-                                Finish Early
+                                Finish Exam Early
                             </Button>
                         </CardFooter>
                     </Card>

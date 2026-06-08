@@ -64,7 +64,11 @@ class SubjectController extends Controller
             $validated['allocation_criteria'] = json_decode($validated['allocation_criteria'], true);
         }
 
-        Subject::create($validated);
+        $subject = Subject::create($validated);
+
+        if ($subject->examSeason) {
+            app(\App\Services\SubjectAllocationService::class)->allocateForSeason($subject->examSeason);
+        }
 
         return redirect()->route('admin.subjects.index')->with('success', 'Subject created successfully.');
     }
@@ -122,6 +126,10 @@ class SubjectController extends Controller
         }
 
         $subject->update($validated);
+
+        if ($subject->examSeason) {
+            app(\App\Services\SubjectAllocationService::class)->allocateForSeason($subject->examSeason);
+        }
 
         return redirect()->route('admin.subjects.index')->with('success', 'Subject updated successfully.');
     }
