@@ -1,9 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
-import { PlusCircle, Edit, Trash2, Upload, Download } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Download, Database, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination';
 import {
     Card,
     CardContent,
@@ -54,14 +55,22 @@ interface PageProps {
     questions: {
         data: Question[];
         links: any[];
+        from?: number;
+        to?: number;
+        total?: number;
     };
     subjects: Subject[];
     filters: {
         subject_id?: string;
     };
+    stats: {
+        total: number;
+        active: number;
+        inactive: number;
+    };
 }
 
-export default function Index({ questions, subjects, filters }: PageProps) {
+export default function Index({ questions, subjects, filters, stats }: PageProps) {
     const [isImportOpen, setIsImportOpen] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         file: null as File | null,
@@ -177,6 +186,41 @@ export default function Index({ questions, subjects, filters }: PageProps) {
                             </Button>
                         </Link>
                     </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card className="relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-white dark:from-zinc-900 dark:to-zinc-950">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+                            <Database className="h-4 w-4 text-indigo-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold tracking-tight">{stats.total}</div>
+                            <p className="text-xs text-muted-foreground mt-1">Questions in the bank</p>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-50/50 to-white dark:from-zinc-900 dark:to-zinc-950">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                            <CardTitle className="text-sm font-medium">Active Questions</CardTitle>
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{stats.active}</div>
+                            <p className="text-xs text-muted-foreground mt-1">Available for exams</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="relative overflow-hidden bg-gradient-to-br from-amber-50/50 to-white dark:from-zinc-900 dark:to-zinc-950">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                            <CardTitle className="text-sm font-medium">Inactive Questions</CardTitle>
+                            <AlertCircle className="h-4 w-4 text-amber-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-400">{stats.inactive}</div>
+                            <p className="text-xs text-muted-foreground mt-1">Draft or disabled</p>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <Card>
@@ -311,6 +355,14 @@ export default function Index({ questions, subjects, filters }: PageProps) {
                                     )}
                                 </TableBody>
                             </Table>
+                        </div>
+                        <div className="mt-4">
+                            <Pagination
+                                links={questions.links}
+                                from={questions.from}
+                                to={questions.to}
+                                total={questions.total}
+                            />
                         </div>
                     </CardContent>
                 </Card>

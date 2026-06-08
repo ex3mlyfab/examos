@@ -29,10 +29,17 @@ class QuestionController extends Controller
         $questions = $query->paginate(15)->withQueryString();
         $subjects = Subject::orderBy('name', 'asc')->get();
 
+        $stats = [
+            'total' => Question::count(),
+            'active' => Question::where('is_active', true)->count(),
+            'inactive' => Question::where('is_active', false)->count(),
+        ];
+
         return Inertia::render('Admin/Questions/Index', [
             'questions' => $questions,
             'subjects' => $subjects,
             'filters' => $request->only(['subject_id']),
+            'stats' => $stats,
         ]);
     }
 
