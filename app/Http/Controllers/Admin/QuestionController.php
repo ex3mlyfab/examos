@@ -74,7 +74,7 @@ class QuestionController extends Controller
             $question = Question::create([
                 'subject_id' => $validated['subject_id'],
                 'question_text' => $validated['question_text'],
-                'question_type' => 'multiple_choice',
+                'question_type' => 'single_choice',
                 'image_path' => $imagePath,
                 'marks' => $validated['marks'],
                 'is_active' => $validated['is_active'] ?? true,
@@ -302,7 +302,7 @@ class QuestionController extends Controller
                     $question = Question::create([
                         'subject_id' => $subject->id,
                         'question_text' => $questionText,
-                        'question_type' => 'multiple_choice',
+                        'question_type' => 'single_choice',
                         'marks' => $marks ?: 1,
                         'is_active' => true,
                         'created_by' => auth()->id(),

@@ -30,7 +30,7 @@ class QuestionBankImport implements ToCollection, WithHeadingRow
                 $question = Question::create([
                     'subject_id' => $this->subject->id,
                     'question_text' => $row['question_text'],
-                    'question_type' => $row['question_type'] ?? 'multiple_choice',
+                    'question_type' => $row['question_type'] ?? 'single_choice',
                     'marks' => $row['marks'] ?? 1,
                     'is_active' => true,
                     'created_by' => auth()->id(),
