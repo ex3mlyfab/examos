@@ -10,7 +10,7 @@ class SuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $superAdmin = User::firstOrCreate([
+        $superAdmin = App\Models\User::firstOrCreate([
             'email' => 'admin@examos.test',
         ], [
             'name' => 'Examos Super Admin',

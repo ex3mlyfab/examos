@@ -219,13 +219,22 @@ class QuestionController extends Controller
 
         $columns = ['subject_code', 'question_text', 'marks', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option_label'];
 
-        $callback = function () use ($columns) {
+        // Get actual subject codes to make the template sample valid and useful
+        $subjectCodes = Subject::pluck('code')->take(2)->toArray();
+        if (empty($subjectCodes)) {
+            $subjectCodes = ['MTH-101'];
+        }
+
+        $callback = function () use ($columns, $subjectCodes) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
 
-            // Sample rows
-            fputcsv($file, ['MTH101', 'What is 2 + 2?', '1', '3', '4', '5', '6', 'B']);
-            fputcsv($file, ['MTH101', 'What is the square root of 16?', '2', '2', '4', '8', '16', 'B']);
+            // Sample rows using actual subject codes
+            $code1 = $subjectCodes[0];
+            $code2 = $subjectCodes[1] ?? $code1;
+
+            fputcsv($file, [$code1, 'What is 2 + 2?', '1', '3', '4', '5', '6', 'B']);
+            fputcsv($file, [$code2, 'What is the square root of 16?', '2', '2', '4', '8', '16', 'B']);
 
             fclose($file);
         };
@@ -239,25 +248,43 @@ class QuestionController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:5120',
+            'file' => 'required|file|max:5120',
         ]);
 
         $file = $request->file('file');
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (!in_array($extension, ['csv', 'txt'])) {
+            return redirect()->back()->withErrors(['file' => 'The file must be a file of type: csv, txt.']);
+        }
+
+        $count = 0;
 
         try {
-            DB::transaction(function () use ($file) {
+            DB::transaction(function () use ($file, &$count) {
                 $handle = fopen($file->getRealPath(), 'r');
-                $header = fgetcsv($handle, 1000, ',');
+                
+                // Read first line to detect delimiter
+                $firstLine = fgets($handle);
+                $separator = ',';
+                if (strpos($firstLine, ';') !== false && strpos($firstLine, ',') === false) {
+                    $separator = ';';
+                }
+                
+                rewind($handle);
+                $header = fgetcsv($handle, 1000, $separator);
 
-                $subjectsByCode = Subject::all()->keyBy('code');
+                // Fetch subjects and key them by a normalized subject code (uppercase, alphanumeric only)
+                $subjectsByNormalizedCode = Subject::all()->keyBy(function ($subject) {
+                    return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $subject->code));
+                });
 
-                $count = 0;
-                while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                while (($data = fgetcsv($handle, 1000, $separator)) !== false) {
                     if (count($data) < 8) {
                         continue;
                     } // Skip malformed rows
 
-                    $subjectCode = trim($data[0]);
+                    $rawSubjectCode = trim($data[0]);
+                    $subjectCodeNormalized = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $rawSubjectCode));
                     $questionText = trim($data[1]);
                     $marks = (int) trim($data[2]);
                     $optA = trim($data[3]);
@@ -266,11 +293,11 @@ class QuestionController extends Controller
                     $optD = trim($data[6]);
                     $correctLabel = strtoupper(trim($data[7]));
 
-                    if (! $questionText || ! isset($subjectsByCode[$subjectCode])) {
+                    if (!$questionText || !isset($subjectsByNormalizedCode[$subjectCodeNormalized])) {
                         continue;
                     }
 
-                    $subject = $subjectsByCode[$subjectCode];
+                    $subject = $subjectsByNormalizedCode[$subjectCodeNormalized];
 
                     $question = Question::create([
                         'subject_id' => $subject->id,
@@ -303,7 +330,13 @@ class QuestionController extends Controller
                 fclose($handle);
             });
 
-            return redirect()->route('admin.questions.index')->with('success', 'Successfully imported questions.');
+            if ($count === 0) {
+                return redirect()->back()->withErrors([
+                    'file' => 'No questions were imported. Please check that the subject codes in your CSV match the subject codes in the system.'
+                ]);
+            }
+
+            return redirect()->route('admin.questions.index')->with('success', "Successfully imported {$count} questions.");
         } catch (\Exception $e) {
             Log::error('Question import failed: '.$e->getMessage());
 

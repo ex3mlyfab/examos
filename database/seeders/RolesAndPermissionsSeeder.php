@@ -42,14 +42,14 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         foreach ($adminPermissions as $permission) {
-            Permission::findOrCreate($permission, 'web');
+            Spatie\Permission\Models\Permission::findOrCreate($permission, 'web');
         }
 
         // Create Roles and assign created permissions
 
         // 1. Super Admin gets everything (via Gate::before rule, but we assign here too for UI visibility)
-        $superAdmin = Role::findOrCreate('super-admin', 'web');
-        $superAdmin->givePermissionTo(Permission::all());
+        $superAdmin = Spatie\Permission\Models\Role::findOrCreate('super-admin', 'web');
+        $superAdmin->givePermissionTo(Spatie\Permission\Models\Permission::all());
 
         // 2. Admin gets most things except audit logs and deleting seasons
         $admin = Role::findOrCreate('admin', 'web');
