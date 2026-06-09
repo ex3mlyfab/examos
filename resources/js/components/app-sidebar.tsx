@@ -5,6 +5,10 @@ import {
     LayoutGrid,
     MonitorPlay,
     FileText,
+    Users,
+    Shield,
+    Key,
+    BarChart,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -57,6 +61,26 @@ const mainNavItems: NavItem[] = [
         title: 'Question Bank',
         href: '/admin/questions',
         icon: BookOpen,
+    },
+    {
+        title: 'Reports',
+        href: '/admin/reports',
+        icon: BarChart,
+    },
+    {
+        title: 'Users',
+        href: '/admin/users',
+        icon: Users,
+    },
+    {
+        title: 'Roles',
+        href: '/admin/roles',
+        icon: Shield,
+    },
+    {
+        title: 'Permissions',
+        href: '/admin/permissions',
+        icon: Key,
     },
 ];
 

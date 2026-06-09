@@ -53,6 +53,7 @@ interface Season {
     id: number;
     name: string;
     status: string;
+    exam_mode: string;
 }
 
 interface PageProps {
@@ -183,14 +184,7 @@ export default function ResultsIndex({
                                     <TableRow>
                                         <TableHead>File No</TableHead>
                                         <TableHead>Candidate</TableHead>
-                                        {subjects.map((sub) => (
-                                            <TableHead
-                                                key={sub.id}
-                                                className="text-center"
-                                            >
-                                                {sub.code}
-                                            </TableHead>
-                                        ))}
+                                        <TableHead>Subjects</TableHead>
                                         <TableHead className="text-center">
                                             Overall
                                         </TableHead>
@@ -200,7 +194,7 @@ export default function ResultsIndex({
                                     {candidates.data.length === 0 ? (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={subjects.length + 3}
+                                                colSpan={4}
                                                 className="h-24 text-center"
                                             >
                                                 No candidates found for this
@@ -213,73 +207,93 @@ export default function ResultsIndex({
                                             let completedCount = 0;
                                             let allPassed = true;
 
+                                            // Pre-compute subject sessions for overall calc
+                                            subjects.forEach((sub) => {
+                                                const session =
+                                                    candidate.exam_sessions.find(
+                                                        (s) =>
+                                                            s.subject_id ===
+                                                            sub.id,
+                                                    );
+                                                if (
+                                                    session &&
+                                                    session.status ===
+                                                        'completed'
+                                                ) {
+                                                    totalScore += session.score;
+                                                    completedCount++;
+                                                    if (!session.passed) {
+                                                        allPassed = false;
+                                                    }
+                                                } else {
+                                                    allPassed = false;
+                                                }
+                                            });
+
                                             return (
                                                 <TableRow key={candidate.id}>
-                                                    <TableCell className="font-medium">
+                                                    <TableCell className="font-medium align-top">
                                                         {candidate.file_no}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="align-top">
                                                         {candidate.name}
                                                     </TableCell>
 
-                                                    {subjects.map((sub) => {
-                                                        const session =
-                                                            candidate.exam_sessions.find(
-                                                                (s) =>
-                                                                    s.subject_id ===
-                                                                    sub.id,
-                                                            );
-
-                                                        if (
-                                                            session &&
-                                                            session.status ===
-                                                                'completed'
-                                                        ) {
-                                                            totalScore +=
-                                                                session.score;
-                                                            completedCount++;
-
-                                                            if (
-                                                                !session.passed
-                                                            ) {
-                                                                allPassed = false;
-                                                            }
-                                                        } else {
-                                                            allPassed = false;
-                                                        }
-
-                                                        return (
-                                                            <TableCell
-                                                                key={sub.id}
-                                                                className="text-center"
-                                                            >
-                                                                {session ? (
-                                                                    <div className="flex flex-col items-center">
-                                                                        <span
-                                                                            className={`font-semibold ${session.passed ? 'text-green-600' : 'text-destructive'}`}
+                                                    {/* Single "Subjects" column with all subject scores stacked */}
+                                                    <TableCell className="align-top">
+                                                        <div className="flex flex-col gap-2">
+                                                            {subjects.map(
+                                                                (sub) => {
+                                                                    const session =
+                                                                        candidate.exam_sessions.find(
+                                                                            (
+                                                                                s,
+                                                                            ) =>
+                                                                                s.subject_id ===
+                                                                                sub.id,
+                                                                        );
+                                                                    return (
+                                                                        <div
+                                                                            key={
+                                                                                sub.id
+                                                                            }
+                                                                            className="flex items-center justify-between gap-3 rounded-sm border px-2 py-1 text-sm"
                                                                         >
-                                                                            {session.score !==
-                                                                            null
-                                                                                ? `${Number(session.score).toFixed(1)}%`
-                                                                                : 'TBD'}
-                                                                        </span>
-                                                                        <Link
-                                                                            href={`/admin/results/${session.id}`}
-                                                                            className="mt-1 flex items-center text-xs text-primary hover:underline"
-                                                                        >
-                                                                            View
-                                                                        </Link>
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-sm text-muted-foreground">
-                                                                        N/A
-                                                                    </span>
-                                                                )}
-                                                            </TableCell>
-                                                        );
-                                                    })}
+                                                                            <span className="font-medium text-muted-foreground">
+                                                                                {
+                                                                                    sub.code
+                                                                                }
+                                                                            </span>
+                                                                            {session ? (
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span
+                                                                                        className={`font-semibold ${session.passed ? 'text-green-600' : 'text-destructive'}`}
+                                                                                    >
+                                                                                        {session.score !==
+                                                                                        null
+                                                                                            ? `${Number(session.score).toFixed(1)}%`
+                                                                                            : 'TBD'}
+                                                                                    </span>
+                                                                                    <Link
+                                                                                        href={`/admin/results/${session.id}`}
+                                                                                        className="text-xs text-primary hover:underline"
+                                                                                    >
+                                                                                        View
+                                                                                    </Link>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span className="text-xs text-muted-foreground">
+                                                                                    N/A
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
 
-                                                    <TableCell className="text-center">
+                                                    <TableCell className="text-center align-top">
                                                         {completedCount ===
                                                             subjects.length &&
                                                         subjects.length > 0 ? (

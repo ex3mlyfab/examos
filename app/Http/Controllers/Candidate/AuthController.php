@@ -46,8 +46,8 @@ class AuthController extends Controller
                 return back()->withErrors(['file_no' => 'Your account is locked to another device. Please contact an administrator to release it.']);
             }
 
-            // Lock to this device
-            $deviceService->lockDevice($candidate, $request);
+            // Note: Device is no longer locked on login.
+            // It will be locked when entering exam routes via EnsureDeviceNotLocked middleware.
 
             $request->session()->regenerate();
 
@@ -62,9 +62,15 @@ class AuthController extends Controller
     /**
      * Log the candidate out of the application.
      */
-    public function logout(Request $request)
+    public function logout(Request $request, DeviceFingerprintService $deviceService)
     {
-        Auth::guard('candidate')->logout();
+        $guard = Auth::guard('candidate');
+        
+        if ($guard->check()) {
+            $deviceService->releaseDevice($guard->user());
+        }
+
+        $guard->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

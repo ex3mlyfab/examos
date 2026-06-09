@@ -568,25 +568,7 @@ export default function CombinedRoom({
                             Page {activeSubjectPage + 1} of {totalPages}
                         </div>
 
-                        {activeSubjectPage === totalPages - 1 ? (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={() => {
-                                        if (
-                                            confirm(
-                                                'Are you sure you want to submit your entire exam? This action cannot be undone.',
-                                            )
-                                        ) {
-                                            submitExam();
-                                        }
-                                    }}
-                                    disabled={isSubmitting}
-                                    className="bg-green-600 text-white hover:bg-green-700"
-                                >
-                                    Submit Combined Exam <Send className="ml-2 h-4 w-4" />
-                                </Button>
-                            </div>
-                        ) : (
+                        <div className="flex gap-2">
                             <Button
                                 onClick={() =>
                                     setCurrentPages((prev) => ({
@@ -594,11 +576,27 @@ export default function CombinedRoom({
                                         [activeSubjectId]: Math.min(totalPages - 1, (prev[activeSubjectId] || 0) + 1),
                                     }))
                                 }
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || activeSubjectPage === totalPages - 1}
                             >
                                 Next <ChevronRight className="ml-2 h-4 w-4" />
                             </Button>
-                        )}
+
+                            <Button
+                                onClick={() => {
+                                    if (
+                                        confirm(
+                                            'Are you sure you want to submit your entire exam? This action cannot be undone.',
+                                        )
+                                    ) {
+                                        submitExam();
+                                    }
+                                }}
+                                disabled={isSubmitting}
+                                className="bg-green-600 text-white hover:bg-green-700"
+                            >
+                                Submit Combined Exam <Send className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
 

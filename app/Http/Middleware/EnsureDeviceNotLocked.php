@@ -32,8 +32,21 @@ class EnsureDeviceNotLocked
                     ->withErrors(['device' => 'Your account is locked to another device. Please contact an admin.']);
             }
 
-            // If they are on the same device but not locked, re-lock them (e.g. admin released them and they just logged back in)
-            $deviceService->lockDevice($candidate, $request);
+            // Lock device only when accessing exam-related routes
+            $examRoutes = [
+                'candidate.room',
+                'candidate.combined-room',
+                'candidate.start',
+                'candidate.start-combined',
+                'candidate.answer',
+                'candidate.submit',
+                'candidate.submit-combined',
+                'candidate.sync-time'
+            ];
+
+            if ($request->route() && in_array($request->route()->getName(), $examRoutes)) {
+                $deviceService->lockDevice($candidate, $request);
+            }
         }
 
         return $next($request);
