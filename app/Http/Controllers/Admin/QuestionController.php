@@ -290,6 +290,10 @@ class QuestionController extends Controller
                         continue;
                     } // Skip malformed rows
 
+                    $data = array_map(function ($value) {
+                        return mb_convert_encoding($value, 'UTF-8', 'UTF-8, ISO-8859-1, Windows-1252');
+                    }, $data);
+
                     $rawSubjectCode = trim($data[0]);
                     $subjectCodeNormalized = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $rawSubjectCode));
                     $questionText = trim($data[1]);
