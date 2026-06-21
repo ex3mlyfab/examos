@@ -26,9 +26,12 @@ class ExamResultsExport implements FromCollection, ShouldAutoSize, WithHeadings,
     public function collection()
     {
         return Candidate::where('exam_season_id', $this->season->id)
-            ->with(['examSessions' => function ($query) {
-                $query->where('status', 'completed');
-            }])
+            ->with([
+                'examSessions' => function ($query) {
+                    $query->where('status', 'completed');
+                },
+                'subjects'
+            ])
             ->get();
     }
 
@@ -65,19 +68,28 @@ class ExamResultsExport implements FromCollection, ShouldAutoSize, WithHeadings,
         $completedSubjectsCount = 0;
         $allPassed = true;
 
+        $allocatedSubjectIds = $candidate->subjects->pluck('id')->toArray();
+        $sessionSubjectIds = $candidate->examSessions->pluck('subject_id')->toArray();
+        $participatingSubjectIds = array_unique(array_merge($allocatedSubjectIds, $sessionSubjectIds));
+        $participatingCount = count($participatingSubjectIds);
+
         // Map scores for each subject
         foreach ($this->subjects as $subject) {
             $session = $candidate->examSessions->firstWhere('subject_id', $subject->id);
-            if ($session) {
-                $row[] = number_format($session->score, 2);
-                $totalScore += $session->score;
-                $completedSubjectsCount++;
-                if (! $session->passed) {
+            if (in_array($subject->id, $participatingSubjectIds)) {
+                if ($session) {
+                    $row[] = number_format($session->score, 2);
+                    $totalScore += $session->score;
+                    $completedSubjectsCount++;
+                    if (! $session->passed) {
+                        $allPassed = false;
+                    }
+                } else {
+                    $row[] = 'Pending';
                     $allPassed = false;
                 }
             } else {
-                $row[] = 'N/A';
-                $allPassed = false; // If they didn't complete a subject, they haven't passed the combo
+                $row[] = '-';
             }
         }
 
@@ -86,10 +98,11 @@ class ExamResultsExport implements FromCollection, ShouldAutoSize, WithHeadings,
         $row[] = number_format($average, 2);
 
         // Overall Status
-        // Simplistic logic: passed if they took all subjects and passed all of them
-        if ($completedSubjectsCount === 0) {
+        if ($participatingCount === 0) {
+            $row[] = 'No Subjects';
+        } elseif ($completedSubjectsCount === 0) {
             $row[] = 'Not Started';
-        } elseif ($completedSubjectsCount < $this->subjects->count()) {
+        } elseif ($completedSubjectsCount < $participatingCount) {
             $row[] = 'Incomplete';
         } else {
             $row[] = $allPassed ? 'Passed' : 'Failed';

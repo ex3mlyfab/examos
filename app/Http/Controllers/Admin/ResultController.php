@@ -36,9 +36,15 @@ class ResultController extends Controller
 
             // Fetch candidates for this season with their exam sessions
             $candidates = Candidate::where('exam_season_id', $seasonId)
-                ->with(['examSessions' => function ($query) {
-                    $query->select('id', 'candidate_id', 'subject_id', 'status', 'score', 'passed', 'completed_at');
-                }])
+                ->with([
+                    'examSessions' => function ($query) {
+                        $query->where('status', 'completed')
+                            ->select('id', 'candidate_id', 'subject_id', 'status', 'score', 'passed', 'completed_at');
+                    },
+                    'subjects' => function ($query) {
+                        $query->select('subjects.id', 'name', 'code');
+                    }
+                ])
                 ->when($request->search, function ($query, $search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('file_no', 'like', "%{$search}%")

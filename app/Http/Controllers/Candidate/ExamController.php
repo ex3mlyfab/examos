@@ -185,6 +185,7 @@ class ExamController extends Controller
         // Base query – always load answers + question + options + selectedOption when review is on
         $sessions = CandidateExamSession::where('candidate_id', $candidate->id)
             ->whereIn('subject_id', $candidate->subjects->pluck('id'))
+            ->where('status', 'completed')
             ->with(
                 $allowReview
                     ? ['subject', 'answers.question.options', 'answers.selectedOption']

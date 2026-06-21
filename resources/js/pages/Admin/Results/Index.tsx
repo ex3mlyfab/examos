@@ -47,6 +47,7 @@ interface Candidate {
     file_no: string;
     name: string;
     exam_sessions: ExamSession[];
+    subjects?: Subject[];
 }
 
 interface Season {
@@ -203,12 +204,18 @@ export default function ResultsIndex({
                                         </TableRow>
                                     ) : (
                                         candidates.data.map((candidate) => {
+                                            const candidateSubjects = subjects.filter((sub) => {
+                                                const isAllocated = candidate.subjects?.some((cs) => cs.id === sub.id);
+                                                const hasSession = candidate.exam_sessions.some((s) => s.subject_id === sub.id);
+                                                return isAllocated || hasSession;
+                                            });
+
                                             let totalScore = 0;
                                             let completedCount = 0;
                                             let allPassed = true;
 
                                             // Pre-compute subject sessions for overall calc
-                                            subjects.forEach((sub) => {
+                                            candidateSubjects.forEach((sub) => {
                                                 const session =
                                                     candidate.exam_sessions.find(
                                                         (s) =>
@@ -220,7 +227,7 @@ export default function ResultsIndex({
                                                     session.status ===
                                                         'completed'
                                                 ) {
-                                                    totalScore += session.score;
+                                                    totalScore += Number(session.score);
                                                     completedCount++;
                                                     if (!session.passed) {
                                                         allPassed = false;
@@ -239,64 +246,70 @@ export default function ResultsIndex({
                                                         {candidate.name}
                                                     </TableCell>
 
-                                                    {/* Single "Subjects" column with all subject scores stacked */}
+                                                    {/* Single "Subjects" column with participating subject scores stacked */}
                                                     <TableCell className="align-top">
                                                         <div className="flex flex-col gap-2">
-                                                            {subjects.map(
-                                                                (sub) => {
-                                                                    const session =
-                                                                        candidate.exam_sessions.find(
-                                                                            (
-                                                                                s,
-                                                                            ) =>
-                                                                                s.subject_id ===
-                                                                                sub.id,
-                                                                        );
-                                                                    return (
-                                                                        <div
-                                                                            key={
-                                                                                sub.id
-                                                                            }
-                                                                            className="flex items-center justify-between gap-3 rounded-sm border px-2 py-1 text-sm"
-                                                                        >
-                                                                            <span className="font-medium text-muted-foreground">
-                                                                                {
-                                                                                    sub.code
+                                                            {candidateSubjects.length === 0 ? (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    No Subjects
+                                                                </span>
+                                                            ) : (
+                                                                candidateSubjects.map(
+                                                                    (sub) => {
+                                                                        const session =
+                                                                            candidate.exam_sessions.find(
+                                                                                (
+                                                                                    s,
+                                                                                ) =>
+                                                                                    s.subject_id ===
+                                                                                    sub.id,
+                                                                            );
+                                                                        return (
+                                                                            <div
+                                                                                key={
+                                                                                    sub.id
                                                                                 }
-                                                                            </span>
-                                                                            {session ? (
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span
-                                                                                        className={`font-semibold ${session.passed ? 'text-green-600' : 'text-destructive'}`}
-                                                                                    >
-                                                                                        {session.score !==
-                                                                                        null
-                                                                                            ? `${Number(session.score).toFixed(1)}%`
-                                                                                            : 'TBD'}
-                                                                                    </span>
-                                                                                    <Link
-                                                                                        href={`/admin/results/${session.id}`}
-                                                                                        className="text-xs text-primary hover:underline"
-                                                                                    >
-                                                                                        View
-                                                                                    </Link>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <span className="text-xs text-muted-foreground">
-                                                                                    N/A
+                                                                                className="flex items-center justify-between gap-3 rounded-sm border px-2 py-1 text-sm"
+                                                                            >
+                                                                                <span className="font-medium text-muted-foreground">
+                                                                                    {
+                                                                                        sub.code
+                                                                                    }
                                                                                 </span>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                },
+                                                                                {session ? (
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span
+                                                                                            className={`font-semibold ${session.passed ? 'text-green-600' : 'text-destructive'}`}
+                                                                                        >
+                                                                                            {session.score !==
+                                                                                            null
+                                                                                                ? `${Number(session.score).toFixed(1)}%`
+                                                                                                : 'TBD'}
+                                                                                        </span>
+                                                                                        <Link
+                                                                                            href={`/admin/results/${session.id}`}
+                                                                                            className="text-xs text-primary hover:underline"
+                                                                                        >
+                                                                                            View
+                                                                                        </Link>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-xs text-muted-foreground">
+                                                                                        Pending
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    },
+                                                                )
                                                             )}
                                                         </div>
                                                     </TableCell>
 
                                                     <TableCell className="text-center align-top">
                                                         {completedCount ===
-                                                            subjects.length &&
-                                                        subjects.length > 0 ? (
+                                                            candidateSubjects.length &&
+                                                        candidateSubjects.length > 0 ? (
                                                             <Badge
                                                                 variant={
                                                                     allPassed
@@ -311,13 +324,13 @@ export default function ResultsIndex({
                                                             >
                                                                 {(
                                                                     totalScore /
-                                                                    subjects.length
+                                                                    candidateSubjects.length
                                                                 ).toFixed(1)}
                                                                 %
                                                             </Badge>
                                                         ) : (
                                                             <span className="text-xs text-muted-foreground">
-                                                                Incomplete
+                                                                {candidateSubjects.length === 0 ? 'N/A' : 'Incomplete'}
                                                             </span>
                                                         )}
                                                     </TableCell>
