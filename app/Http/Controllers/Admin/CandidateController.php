@@ -63,6 +63,33 @@ class CandidateController extends Controller
     }
 
     /**
+     * Import candidates from CSV/Excel.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'exam_season_id' => 'required|exists:exam_seasons,id',
+            'file' => 'required|file|max:5120',
+        ]);
+
+        $file = $request->file('file');
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (!in_array($extension, ['csv', 'txt', 'xlsx', 'xls'])) {
+            return redirect()->back()->withErrors(['file' => 'The file must be a file of type: csv, txt, xlsx, xls.']);
+        }
+
+        $season = ExamSeason::findOrFail($request->exam_season_id);
+
+        try {
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\CandidatesImport($season), $file);
+            return redirect()->route('admin.candidates.index')->with('success', 'Candidates imported successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Candidates import failed: '.$e->getMessage());
+            return redirect()->back()->withErrors(['file' => 'Failed to process import file. Ensure the format matches the template.']);
+        }
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

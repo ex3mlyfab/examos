@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     PlusCircle,
     Edit,
@@ -12,6 +12,17 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import {
     Card,
     CardContent,
@@ -63,6 +74,11 @@ interface PageProps {
 
 export default function Index({ candidates, seasons, filters }: PageProps) {
     const [viewMode, setViewMode] = useState<'table' | 'print'>('table');
+    const [isImportOpen, setIsImportOpen] = useState(false);
+    const { data, setData, post, processing, errors, reset } = useForm({
+        exam_season_id: filters.season_id || '',
+        file: null as File | null,
+    });
 
     const handleFilterChange = (value: string) => {
         router.get(
@@ -70,6 +86,16 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
             { season_id: value === 'all' ? '' : value },
             { preserveState: true },
         );
+    };
+
+    const handleImport = (e: React.FormEvent) => {
+        e.preventDefault();
+        post('/admin/candidates/import', {
+            onSuccess: () => {
+                setIsImportOpen(false);
+                reset('file');
+            },
+        });
     };
 
     return (
@@ -164,9 +190,96 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
                                 <Download className="mr-2 h-4 w-4" /> Template
                             </Button>
                         </a>
-                        <Button variant="outline">
-                            <Upload className="mr-2 h-4 w-4" /> Upload
-                        </Button>
+                        <Dialog
+                            open={isImportOpen}
+                            onOpenChange={setIsImportOpen}
+                        >
+                            <DialogTrigger asChild>
+                                <Button variant="outline">
+                                    <Upload className="mr-2 h-4 w-4" /> Upload
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Upload Candidates</DialogTitle>
+                                    <DialogDescription>
+                                        Upload a CSV or Excel file to bulk import candidates.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <form onSubmit={handleImport}>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="exam_season_id">
+                                                Exam Season
+                                            </Label>
+                                            <Select
+                                                value={data.exam_season_id}
+                                                onValueChange={(val) => setData('exam_season_id', val)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select Exam Season" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {seasons.map((season) => (
+                                                        <SelectItem
+                                                            key={season.id}
+                                                            value={season.id.toString()}
+                                                        >
+                                                            {season.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.exam_season_id && (
+                                                <p className="text-sm font-medium text-destructive">
+                                                    {errors.exam_season_id}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="file">
+                                                CSV/Excel File
+                                            </Label>
+                                            <Input
+                                                id="file"
+                                                type="file"
+                                                accept=".csv,.xlsx,.xls"
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'file',
+                                                        e.target.files
+                                                            ? e.target.files[0]
+                                                            : null,
+                                                    )
+                                                }
+                                            />
+                                            {errors.file && (
+                                                <p className="text-sm font-medium text-destructive">
+                                                    {errors.file}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() =>
+                                                setIsImportOpen(false)
+                                            }
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={processing || !data.file || !data.exam_season_id}
+                                        >
+                                            Upload and Import
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </div>
 

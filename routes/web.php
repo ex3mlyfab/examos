@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         Route::resource('exam-seasons', ExamSeasonController::class);
         Route::get('candidates/template', [CandidateController::class, 'downloadTemplate'])->name('candidates.template');
+        Route::post('candidates/import', [CandidateController::class, 'import'])->name('candidates.import');
         Route::resource('candidates', CandidateController::class);
         Route::resource('subjects', SubjectController::class);
 
