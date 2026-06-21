@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import Pagination from '@/components/Pagination';
 import {
     Dialog,
     DialogContent,
@@ -65,6 +66,9 @@ interface PageProps {
     candidates: {
         data: Candidate[];
         links: any[];
+        from?: number;
+        to?: number;
+        total?: number;
     };
     seasons: ExamSeason[];
     filters: {
@@ -443,6 +447,14 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
                                         )}
                                     </TableBody>
                                 </Table>
+                            </div>
+                            <div className="mt-4">
+                                <Pagination
+                                    links={candidates.links}
+                                    from={candidates.from}
+                                    to={candidates.to}
+                                    total={candidates.total}
+                                />
                             </div>
                         </CardContent>
                     </Card>

@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination';
 import {
     Card,
     CardContent,
@@ -43,6 +44,9 @@ interface PageProps {
     subjects: {
         data: Subject[];
         links: any[];
+        from?: number;
+        to?: number;
+        total?: number;
     };
     seasons: ExamSeason[];
     filters: {
@@ -209,6 +213,14 @@ export default function Index({ subjects, seasons, filters }: PageProps) {
                                     )}
                                 </TableBody>
                             </Table>
+                        </div>
+                        <div className="mt-4">
+                            <Pagination
+                                links={subjects.links}
+                                from={subjects.from}
+                                to={subjects.to}
+                                total={subjects.total}
+                            />
                         </div>
                     </CardContent>
                 </Card>
