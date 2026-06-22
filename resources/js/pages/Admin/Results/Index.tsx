@@ -3,6 +3,7 @@ import { Download, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination';
 import {
     Card,
     CardContent,
@@ -48,6 +49,9 @@ interface Candidate {
     name: string;
     exam_sessions: ExamSession[];
     subjects?: Subject[];
+    from?: number;
+    to?: number;
+    total?: number;
 }
 
 interface Season {
@@ -64,7 +68,10 @@ interface PageProps {
     candidates: {
         data: Candidate[];
         links: any[];
-    };
+        from?: number;
+        to?: number;
+        total?: number;
+    } | any[];
     filters: {
         search?: string;
         season_id?: string;
@@ -100,6 +107,9 @@ export default function ResultsIndex({
 
         window.location.href = `/admin/results/export?season_id=${currentSeason.id}`;
     };
+
+    const candidateList = Array.isArray(candidates) ? candidates : (candidates?.data || []);
+    const isPaginated = !Array.isArray(candidates);
 
     return (
         <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
@@ -179,167 +189,178 @@ export default function ResultsIndex({
                             Please select an Exam Season to view results.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>File No</TableHead>
-                                        <TableHead>Candidate</TableHead>
-                                        <TableHead>Subjects</TableHead>
-                                        <TableHead className="text-center">
-                                            Overall
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {candidates.data.length === 0 ? (
+                        <div className="space-y-4">
+                            <div className="overflow-x-auto rounded-md border">
+                                <Table>
+                                    <TableHeader>
                                         <TableRow>
-                                            <TableCell
-                                                colSpan={4}
-                                                className="h-24 text-center"
-                                            >
-                                                No candidates found for this
-                                                season.
-                                            </TableCell>
+                                            <TableHead>File No</TableHead>
+                                            <TableHead>Candidate</TableHead>
+                                            <TableHead>Subjects</TableHead>
+                                            <TableHead className="text-center">
+                                                Overall
+                                            </TableHead>
                                         </TableRow>
-                                    ) : (
-                                        candidates.data.map((candidate) => {
-                                            const candidateSubjects = subjects.filter((sub) => {
-                                                const isAllocated = candidate.subjects?.some((cs) => cs.id === sub.id);
-                                                const hasSession = candidate.exam_sessions.some((s) => s.subject_id === sub.id);
-                                                return isAllocated || hasSession;
-                                            });
+                                    </TableHeader>
+                                    <TableBody>
+                                        {candidateList.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell
+                                                    colSpan={4}
+                                                    className="h-24 text-center"
+                                                >
+                                                    No candidates found for this
+                                                    season.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            candidateList.map((candidate) => {
+                                                const candidateSubjects = subjects.filter((sub) => {
+                                                    const isAllocated = candidate.subjects?.some((cs) => cs.id === sub.id);
+                                                    const hasSession = candidate.exam_sessions.some((s) => s.subject_id === sub.id);
+                                                    return isAllocated || hasSession;
+                                                });
 
-                                            let totalScore = 0;
-                                            let completedCount = 0;
-                                            let allPassed = true;
+                                                let totalScore = 0;
+                                                let completedCount = 0;
+                                                let allPassed = true;
 
-                                            // Pre-compute subject sessions for overall calc
-                                            candidateSubjects.forEach((sub) => {
-                                                const session =
-                                                    candidate.exam_sessions.find(
-                                                        (s) =>
-                                                            s.subject_id ===
-                                                            sub.id,
-                                                    );
-                                                if (
-                                                    session &&
-                                                    session.status ===
-                                                        'completed'
-                                                ) {
-                                                    totalScore += Number(session.score);
-                                                    completedCount++;
-                                                    if (!session.passed) {
+                                                // Pre-compute subject sessions for overall calc
+                                                candidateSubjects.forEach((sub) => {
+                                                    const session =
+                                                        candidate.exam_sessions.find(
+                                                            (s) =>
+                                                                s.subject_id ===
+                                                                sub.id,
+                                                        );
+                                                    if (
+                                                        session &&
+                                                        session.status ===
+                                                            'completed'
+                                                    ) {
+                                                        totalScore += Number(session.score);
+                                                        completedCount++;
+                                                        if (!session.passed) {
+                                                            allPassed = false;
+                                                        }
+                                                    } else {
                                                         allPassed = false;
                                                     }
-                                                } else {
-                                                    allPassed = false;
-                                                }
-                                            });
+                                                });
 
-                                            return (
-                                                <TableRow key={candidate.id}>
-                                                    <TableCell className="font-medium align-top">
-                                                        {candidate.file_no}
-                                                    </TableCell>
-                                                    <TableCell className="align-top">
-                                                        {candidate.name}
-                                                    </TableCell>
+                                                return (
+                                                    <TableRow key={candidate.id}>
+                                                        <TableCell className="font-medium align-top">
+                                                            {candidate.file_no}
+                                                        </TableCell>
+                                                        <TableCell className="align-top">
+                                                            {candidate.name}
+                                                        </TableCell>
 
-                                                    {/* Single "Subjects" column with participating subject scores stacked */}
-                                                    <TableCell className="align-top">
-                                                        <div className="flex flex-col gap-2">
-                                                            {candidateSubjects.length === 0 ? (
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    No Subjects
-                                                                </span>
-                                                            ) : (
-                                                                candidateSubjects.map(
-                                                                    (sub) => {
-                                                                        const session =
-                                                                            candidate.exam_sessions.find(
-                                                                                (
-                                                                                    s,
-                                                                                ) =>
-                                                                                    s.subject_id ===
-                                                                                    sub.id,
-                                                                            );
-                                                                        return (
-                                                                            <div
-                                                                                key={
-                                                                                    sub.id
-                                                                                }
-                                                                                className="flex items-center justify-between gap-3 rounded-sm border px-2 py-1 text-sm"
-                                                                            >
-                                                                                <span className="font-medium text-muted-foreground">
-                                                                                    {
-                                                                                        sub.code
+                                                        {/* Single "Subjects" column with participating subject scores stacked */}
+                                                        <TableCell className="align-top">
+                                                            <div className="flex flex-col gap-2">
+                                                                {candidateSubjects.length === 0 ? (
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        No Subjects
+                                                                    </span>
+                                                                ) : (
+                                                                    candidateSubjects.map(
+                                                                        (sub) => {
+                                                                            const session =
+                                                                                candidate.exam_sessions.find(
+                                                                                    (
+                                                                                        s,
+                                                                                    ) =>
+                                                                                        s.subject_id ===
+                                                                                        sub.id,
+                                                                                );
+                                                                            return (
+                                                                                <div
+                                                                                    key={
+                                                                                        sub.id
                                                                                     }
-                                                                                </span>
-                                                                                {session ? (
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span
-                                                                                            className={`font-semibold ${session.passed ? 'text-green-600' : 'text-destructive'}`}
-                                                                                        >
-                                                                                            {session.score !==
-                                                                                            null
-                                                                                                ? `${Number(session.score).toFixed(1)}%`
-                                                                                                : 'TBD'}
-                                                                                        </span>
-                                                                                        <Link
-                                                                                            href={`/admin/results/${session.id}`}
-                                                                                            className="text-xs text-primary hover:underline"
-                                                                                        >
-                                                                                            View
-                                                                                        </Link>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <span className="text-xs text-muted-foreground">
-                                                                                        Pending
+                                                                                    className="flex items-center justify-between gap-3 rounded-sm border px-2 py-1 text-sm"
+                                                                                >
+                                                                                    <span className="font-medium text-muted-foreground">
+                                                                                        {
+                                                                                            sub.code
+                                                                                        }
                                                                                     </span>
-                                                                                )}
-                                                                            </div>
-                                                                        );
-                                                                    },
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
+                                                                                    {session ? (
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span
+                                                                                                className={`font-semibold ${session.passed ? 'text-green-600' : 'text-destructive'}`}
+                                                                                            >
+                                                                                                {session.score !==
+                                                                                                null
+                                                                                                    ? `${Number(session.score).toFixed(1)}%`
+                                                                                                    : 'TBD'}
+                                                                                            </span>
+                                                                                            <Link
+                                                                                                href={`/admin/results/${session.id}`}
+                                                                                                className="text-xs text-primary hover:underline"
+                                                                                            >
+                                                                                                View
+                                                                                            </Link>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <span className="text-xs text-muted-foreground">
+                                                                                            Pending
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        },
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
 
-                                                    <TableCell className="text-center align-top">
-                                                        {completedCount ===
-                                                            candidateSubjects.length &&
-                                                        candidateSubjects.length > 0 ? (
-                                                            <Badge
-                                                                variant={
-                                                                    allPassed
-                                                                        ? 'default'
-                                                                        : 'destructive'
-                                                                }
-                                                                className={
-                                                                    allPassed
-                                                                        ? 'bg-green-600'
-                                                                        : ''
-                                                                }
-                                                            >
-                                                                {(
-                                                                    totalScore /
-                                                                    candidateSubjects.length
-                                                                ).toFixed(1)}
-                                                                %
-                                                            </Badge>
-                                                        ) : (
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {candidateSubjects.length === 0 ? 'N/A' : 'Incomplete'}
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })
-                                    )}
-                                </TableBody>
-                            </Table>
+                                                        <TableCell className="text-center align-top">
+                                                            {completedCount ===
+                                                                candidateSubjects.length &&
+                                                            candidateSubjects.length > 0 ? (
+                                                                <Badge
+                                                                    variant={
+                                                                        allPassed
+                                                                            ? 'default'
+                                                                            : 'destructive'
+                                                                    }
+                                                                    className={
+                                                                        allPassed
+                                                                            ? 'bg-green-600'
+                                                                            : ''
+                                                                    }
+                                                                >
+                                                                    {(
+                                                                        totalScore /
+                                                                        candidateSubjects.length
+                                                                    ).toFixed(1)}
+                                                                    %
+                                                                </Badge>
+                                                            ) : (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {candidateSubjects.length === 0 ? 'N/A' : 'Incomplete'}
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {isPaginated && candidates.links && (
+                                <Pagination
+                                    links={candidates.links}
+                                    from={candidates.from}
+                                    to={candidates.to}
+                                    total={candidates.total}
+                                />
+                            )}
                         </div>
                     )}
                 </CardContent>

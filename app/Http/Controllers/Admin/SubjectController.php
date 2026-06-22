@@ -21,13 +21,23 @@ class SubjectController extends Controller
             $query->where('exam_season_id', $request->season_id);
         }
 
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('allocation_criteria->department', 'like', "%{$search}%")
+                    ->orWhere('allocation_criteria->departments', 'like', "%{$search}%");
+            });
+        }
+
         $subjects = $query->paginate(15)->withQueryString();
         $seasons = ExamSeason::orderBy('created_at', 'desc')->get();
 
         return Inertia::render('Admin/Subjects/Index', [
             'subjects' => $subjects,
             'seasons' => $seasons,
-            'filters' => $request->only(['season_id']),
+            'filters' => $request->only(['season_id', 'search']),
         ]);
     }
 

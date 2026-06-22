@@ -22,7 +22,16 @@ class CandidateController extends Controller
             $query->where('exam_season_id', $request->season_id);
         }
 
-        $candidates = $query->paginate(20)->withQueryString();
+        if ($request->has('department') && $request->department) {
+            $query->where('department', $request->department);
+        }
+
+        $perPage = $request->get('per_page', 20);
+        if ($perPage === 'all') {
+            $candidates = $query->paginate($query->count() ?: 20)->withQueryString();
+        } else {
+            $candidates = $query->paginate((int)$perPage)->withQueryString();
+        }
 
         // Make raw_password visible for the admin
         $candidates->getCollection()->transform(function ($candidate) {
@@ -30,11 +39,17 @@ class CandidateController extends Controller
         });
 
         $seasons = ExamSeason::orderBy('created_at', 'desc')->get();
+        $departments = Candidate::whereNotNull('department')
+            ->where('department', '!=', '')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
 
         return Inertia::render('Admin/Candidates/Index', [
             'candidates' => $candidates,
             'seasons' => $seasons,
-            'filters' => $request->only(['season_id']),
+            'departments' => $departments,
+            'filters' => $request->only(['season_id', 'department', 'per_page']),
         ]);
     }
 

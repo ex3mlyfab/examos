@@ -1,6 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import Pagination from '@/components/Pagination';
 import {
     Card,
@@ -51,14 +53,32 @@ interface PageProps {
     seasons: ExamSeason[];
     filters: {
         season_id?: string;
+        search?: string;
     };
 }
 
 export default function Index({ subjects, seasons, filters }: PageProps) {
+    const [search, setSearch] = useState(filters.search || '');
+
     const handleFilterChange = (value: string) => {
         router.get(
             '/admin/subjects',
-            { season_id: value === 'all' ? '' : value },
+            {
+                season_id: value === 'all' ? '' : value,
+                search: search || undefined,
+            },
+            { preserveState: true },
+        );
+    };
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get(
+            '/admin/subjects',
+            {
+                season_id: filters.season_id || undefined,
+                search: search || undefined,
+            },
             { preserveState: true },
         );
     };
@@ -84,7 +104,7 @@ export default function Index({ subjects, seasons, filters }: PageProps) {
                 </div>
 
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-3">
+                    <CardHeader className="flex flex-col gap-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <CardTitle>All Subjects</CardTitle>
                             <CardDescription>
@@ -92,28 +112,49 @@ export default function Index({ subjects, seasons, filters }: PageProps) {
                                 seasons.
                             </CardDescription>
                         </div>
-                        <div className="w-64">
-                            <Select
-                                defaultValue={filters.season_id || 'all'}
-                                onValueChange={handleFilterChange}
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <form
+                                onSubmit={handleSearch}
+                                className="flex items-center space-x-2"
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Filter by Season" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        All Seasons
-                                    </SelectItem>
-                                    {seasons.map((season) => (
-                                        <SelectItem
-                                            key={season.id}
-                                            value={season.id.toString()}
-                                        >
-                                            {season.name}
+                                <Input
+                                    placeholder="Search name, code, dept..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="h-9 w-full sm:w-[250px]"
+                                />
+                                <Button
+                                    type="submit"
+                                    variant="secondary"
+                                    size="icon"
+                                    className="h-9 w-9"
+                                >
+                                    <Search className="h-4 w-4" />
+                                </Button>
+                            </form>
+                            <div className="w-full sm:w-64">
+                                <Select
+                                    defaultValue={filters.season_id || 'all'}
+                                    onValueChange={handleFilterChange}
+                                >
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Filter by Season" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            All Seasons
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        {seasons.map((season) => (
+                                            <SelectItem
+                                                key={season.id}
+                                                value={season.id.toString()}
+                                            >
+                                                {season.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>

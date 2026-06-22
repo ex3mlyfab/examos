@@ -71,12 +71,15 @@ interface PageProps {
         total?: number;
     };
     seasons: ExamSeason[];
+    departments: string[];
     filters: {
         season_id?: string;
+        department?: string;
+        per_page?: string;
     };
 }
 
-export default function Index({ candidates, seasons, filters }: PageProps) {
+export default function Index({ candidates, seasons, departments = [], filters }: PageProps) {
     const [viewMode, setViewMode] = useState<'table' | 'print'>('table');
     const [isImportOpen, setIsImportOpen] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -84,11 +87,15 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
         file: null as File | null,
     });
 
-    const handleFilterChange = (value: string) => {
+    const handleFilterChange = (seasonId: string, dept: string, perPage: string) => {
         router.get(
             '/admin/candidates',
-            { season_id: value === 'all' ? '' : value },
-            { preserveState: true },
+            {
+                season_id: seasonId === 'all' ? '' : seasonId,
+                department: dept === 'all' ? '' : dept,
+                per_page: perPage === '20' ? '' : perPage,
+            },
+            { preserveState: true, replace: true },
         );
     };
 
@@ -297,12 +304,12 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
                                     system.
                                 </CardDescription>
                             </div>
-                            <div className="w-full sm:w-64">
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                 <Select
-                                    defaultValue={filters.season_id || 'all'}
-                                    onValueChange={handleFilterChange}
+                                    value={filters.season_id || 'all'}
+                                    onValueChange={(val) => handleFilterChange(val, filters.department || 'all', filters.per_page || '20')}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Filter by Season" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -317,6 +324,43 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
                                                 {season.name}
                                             </SelectItem>
                                         ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select
+                                    value={filters.department || 'all'}
+                                    onValueChange={(val) => handleFilterChange(filters.season_id || 'all', val, filters.per_page || '20')}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Filter by Dept" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            All Departments
+                                        </SelectItem>
+                                        {departments.map((dept) => (
+                                            <SelectItem
+                                                key={dept}
+                                                value={dept}
+                                            >
+                                                {dept}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select
+                                    value={filters.per_page || '20'}
+                                    onValueChange={(val) => handleFilterChange(filters.season_id || 'all', filters.department || 'all', val)}
+                                >
+                                    <SelectTrigger className="w-[130px]">
+                                        <SelectValue placeholder="Per Page" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="20">20 per page</SelectItem>
+                                        <SelectItem value="50">50 per page</SelectItem>
+                                        <SelectItem value="100">100 per page</SelectItem>
+                                        <SelectItem value="all">Show All</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -472,12 +516,12 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
                                     thermal printer.
                                 </p>
                             </div>
-                            <div className="w-full sm:w-64">
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                 <Select
-                                    defaultValue={filters.season_id || 'all'}
-                                    onValueChange={handleFilterChange}
+                                    value={filters.season_id || 'all'}
+                                    onValueChange={(val) => handleFilterChange(val, filters.department || 'all', filters.per_page || '20')}
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Filter by Season" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -492,6 +536,43 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
                                                 {season.name}
                                             </SelectItem>
                                         ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select
+                                    value={filters.department || 'all'}
+                                    onValueChange={(val) => handleFilterChange(filters.season_id || 'all', val, filters.per_page || '20')}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Filter by Dept" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            All Departments
+                                        </SelectItem>
+                                        {departments.map((dept) => (
+                                            <SelectItem
+                                                key={dept}
+                                                value={dept}
+                                            >
+                                                {dept}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select
+                                    value={filters.per_page || '20'}
+                                    onValueChange={(val) => handleFilterChange(filters.season_id || 'all', filters.department || 'all', val)}
+                                >
+                                    <SelectTrigger className="w-[130px]">
+                                        <SelectValue placeholder="Per Page" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="20">20 per page</SelectItem>
+                                        <SelectItem value="50">50 per page</SelectItem>
+                                        <SelectItem value="100">100 per page</SelectItem>
+                                        <SelectItem value="all">Show All</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -548,6 +629,16 @@ export default function Index({ candidates, seasons, filters }: PageProps) {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        )}
+                        {candidates.data.length > 0 && (
+                            <div className="mt-6 print:hidden">
+                                <Pagination
+                                    links={candidates.links}
+                                    from={candidates.from}
+                                    to={candidates.to}
+                                    total={candidates.total}
+                                />
                             </div>
                         )}
                     </div>
