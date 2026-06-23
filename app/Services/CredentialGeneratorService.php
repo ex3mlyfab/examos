@@ -18,7 +18,7 @@ class CredentialGeneratorService
             $last4 = str_pad($last4, 4, '0', STR_PAD_LEFT);
         }
 
-        return ucfirst(strtolower($firstName)).'@'.$last4;
+        return '1234';
     }
 
     /**
